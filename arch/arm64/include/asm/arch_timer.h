@@ -108,17 +108,15 @@ static inline u64 arch_counter_get_cntpct(void)
 static inline u64 arch_counter_get_cntvct(void)
 {
 	u64 cval;
-
 	isb();
 #if IS_ENABLED(CONFIG_MSM_TIMER_LEAP)
 #define L32_BITS	0x00000000FFFFFFFF
 	do {
-		asm volatile("mrs %0, cntvct_el0" : "=r" (cval));
+		cval = read_sysreg(cntvct_el0);
 	} while ((cval & L32_BITS) == L32_BITS);
 #else
-	asm volatile("mrs %0, cntvct_el0" : "=r" (cval));
+	cval = read_sysreg(cntvct_el0);
 #endif
-
 	return cval;
 }
 
