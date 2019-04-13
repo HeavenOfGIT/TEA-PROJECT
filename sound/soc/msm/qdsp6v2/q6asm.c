@@ -2020,7 +2020,7 @@ static int32_t q6asm_callback(struct apr_client_data *data, void *priv)
 		case ASM_DATA_CMD_REMOVE_TRAILING_SILENCE:
 		case ASM_SESSION_CMD_REGISTER_FOR_RX_UNDERFLOW_EVENTS:
 		case ASM_STREAM_CMD_OPEN_WRITE_COMPRESSED:
-					if (data->payload_size <
+			if (data->payload_size <
 				2 * sizeof(uint32_t)) {
 				pr_err("%s: payload size of %x is less than expected.\n",
 					__func__, data->payload_size);
