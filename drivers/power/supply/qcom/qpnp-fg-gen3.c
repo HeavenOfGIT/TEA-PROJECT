@@ -3776,7 +3776,8 @@ static int fg_psy_get_property(struct power_supply *psy,
 	int rc = 0;
 
 	switch (psp) {
-	case POWER_SUPPLY_PROP_CAPACITY:
+		case POWER_SUPPLY_PROP_CAPACITY:
+		case POWER_SUPPLY_PROP_STATUS:
 		rc = fg_get_prop_capacity(chip, &pval->intval);
 		/*Huaqin modify for hold soc by diganyun at 2018/02/24 start */
 		#ifdef HQ_BUILD_FACTORY
