@@ -564,7 +564,7 @@
 
 				qcom,speed-bin = <90>;
 
-				qcom,initial-pwrlevel = <3>;
+				qcom,initial-pwrlevel = <5>;
 
                                 /* TURBO */
                                 qcom,gpu-pwrlevel@0 {
