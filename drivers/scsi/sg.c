@@ -89,8 +89,6 @@ static void sg_proc_cleanup(void);
  * Of course an overflow is inavoidable if the result of muldiv doesn't fit
  * in 32 bits.
  */
-#define MULDIV(X,MUL,DIV) ((((X % DIV) * MUL) / DIV) + ((X / DIV) * MUL))
-
 #define SG_DEFAULT_TIMEOUT MULDIV(SG_DEFAULT_TIMEOUT_USER, HZ, USER_HZ)
 
 int sg_big_buff = SG_DEF_RESERVED_SIZE;
@@ -964,8 +962,6 @@ sg_ioctl(struct file *filp, unsigned int cmd_in, unsigned long arg)
 			return result;
 		if (val < 0)
 			return -EIO;
-		if (val >= MULDIV (INT_MAX, USER_HZ, HZ))
-		    val = MULDIV (INT_MAX, USER_HZ, HZ);
 		sfp->timeout_user = val;
 		sfp->timeout = MULDIV (val, HZ, USER_HZ);
 
