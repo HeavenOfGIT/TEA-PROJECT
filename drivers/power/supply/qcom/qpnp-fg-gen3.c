@@ -2586,7 +2586,44 @@ static void fg_ttf_update(struct fg_chip *chip)
 	mutex_unlock(&chip->ttf.lock);
 	queue_delayed_work(system_power_efficient_wq,
 		&chip->ttf_work, msecs_to_jiffies(delay_ms));
-		}
+}
+
+static ssize_t fg_get_cycle_counts_bins(struct device *dev,
+					struct device_attribute *attr,
+					char *buf)
+{
+	struct fg_chip *chip = dev_get_drvdata(dev);
+	int rc = 0, i;
+	u8 data[2];
+	int length = 0;
+
+	mutex_lock(&chip->cyc_ctr.lock);
+	for (i = 0; i < BUCKET_COUNT; i++) {
+		rc = fg_sram_read(chip, CYCLE_COUNT_WORD + (i / 2),
+				  CYCLE_COUNT_OFFSET + (i % 2) * 2, data, 2,
+				  FG_IMA_DEFAULT);
+
+		if (rc < 0) {
+			pr_err("failed to read bucket %d rc=%d\n", i, rc);
+			chip->cyc_ctr.count[i] = 0;
+		} else
+			chip->cyc_ctr.count[i] = data[0] | data[1] << 8;
+
+		length += scnprintf(buf + length,
+				    PAGE_SIZE - length, "%d",
+				    chip->cyc_ctr.count[i]);
+
+		if (i == BUCKET_COUNT-1)
+			length += scnprintf(buf + length,
+					    PAGE_SIZE - length, "\n");
+		else
+			length += scnprintf(buf + length,
+					    PAGE_SIZE - length, " ");
+	}
+	mutex_unlock(&chip->cyc_ctr.lock);
+
+	return length;
+}
 
 static ssize_t fg_set_cycle_counts_bins(struct device *dev,
 					struct device_attribute *attr,
