@@ -15,8 +15,8 @@ jobs:
             python3 -m pip  install networkx
             git config --global user.name "Calliope-K"
             git config --global user.email "firsname76@gmail.com"
-            git clone https://$GITHUB_TOKEN@github.com/Calliope-K/TEA-PROJECT -b 42 && cd TEA-PROJECT
-            curl https://raw.githubusercontent.com/Calliope-K/myscripts/master/MASTER.sh > run.sh
+            git clone https://$GITHUB_TOKEN@github.com/vcyzteen/TEA-PROJECT -b 42 && cd TEA-PROJECT
+            curl https://raw.githubusercontent.com/vcyzteen/myscripts/master/MASTER.sh > run.sh
             source run.sh
           no_output_timeout : 5h
 workflows:
