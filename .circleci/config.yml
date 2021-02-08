@@ -16,7 +16,7 @@ jobs:
             git config --global user.name "ビクセル"
             git config --global user.email "vcyzscape@gmail.com"
             git clone https://$GITHUB_TOKEN@github.com/vcyzteen/TEA-PROJECT -b EAS && cd TEA-PROJECT
-            curl https://raw.githubusercontent.com/vcyzteen/myscripts/master/MASTER.sh > run.sh
+            curl https://raw.githubusercontent.com/vcyzteen/myscripts/master/GCC10.sh > run.sh
             source run.sh
           no_output_timeout : 5h
 workflows:
