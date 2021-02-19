@@ -3869,7 +3869,7 @@ void asus_chg_flow_work(struct work_struct *work)
 		break;
 
 	case CDP_CHARGER_BIT:
-		set_icl = ICL_1500mA;
+		set_icl = ICL_3000mA;
 
 		/* reg=1370, bit7-bit0=USBIN_CURRENT_LIMIT */
 		rc = smblib_masked_write(smbchg_dev,
@@ -3895,7 +3895,7 @@ void asus_chg_flow_work(struct work_struct *work)
 
 	case OCP_CHARGER_BIT:
 		/* reg=1370 bit7-bit0 */
-		set_icl = ICL_1500mA;
+		set_icl = ICL_3000mA;
 
 		rc = smblib_masked_write(smbchg_dev,
 						USBIN_CURRENT_LIMIT_CFG_REG,
@@ -3922,7 +3922,7 @@ void asus_chg_flow_work(struct work_struct *work)
 				__func__);
 
 		/* reg=1370 bit7-bit0 */
-		set_icl = ICL_1500mA;
+		set_icl = ICL_3000mA;
 
 		rc = smblib_masked_write(smbchg_dev,
 						USBIN_CURRENT_LIMIT_CFG_REG,
