@@ -74,7 +74,7 @@ struct step_chg_info {
 
 static struct step_chg_info *the_chip;
 
-#define STEP_CHG_HYSTERISIS_DELAY_US		5000000 /* 5 secs */
+#define STEP_CHG_HYSTERISIS_DELAY_US		2000000 /* 5 secs */
 
 /*
  * Step Charging Configuration
@@ -85,7 +85,7 @@ static struct step_chg_info *the_chip;
 static struct step_chg_cfg step_chg_config = {
 	.psy_prop	= POWER_SUPPLY_PROP_VOLTAGE_NOW,
 	.prop_name	= "VBATT",
-	.hysteresis	= 100000, /* 100mV */
+	.hysteresis	= 200000, /* 200mV */
 	.fcc_cfg	= {
 		/* VBAT_LOW	VBAT_HIGH	FCC */
 		{3600000,	4000000,	3000000},
@@ -118,12 +118,12 @@ static struct step_chg_cfg step_chg_config = {
 static struct jeita_fcc_cfg jeita_fcc_config = {
 	.psy_prop	= POWER_SUPPLY_PROP_TEMP,
 	.prop_name	= "BATT_TEMP",
-	.hysteresis	= 10, /* 1degC hysteresis */
+	.hysteresis	= 14, /* 1degC hysteresis */
 	.fcc_cfg	= {
 		/* TEMP_LOW	TEMP_HIGH	FCC */
-		{0,		100,		3000000},
-		{101,		200,		3000000},
-		{201,		450,		3000000},
+		{0,			100,		2200000},
+		{101,		200,		2500000},
+		{201,		450,		2800000},
 		{451,		550,		3000000},
 	},
 };
@@ -131,12 +131,12 @@ static struct jeita_fcc_cfg jeita_fcc_config = {
 static struct jeita_fv_cfg jeita_fv_config = {
 	.psy_prop	= POWER_SUPPLY_PROP_TEMP,
 	.prop_name	= "BATT_TEMP",
-	.hysteresis	= 10, /* 1degC hysteresis */
+	.hysteresis	= 14, /* 1degC hysteresis */
 	.fv_cfg		= {
 		/* TEMP_LOW	TEMP_HIGH	FCC */
-		{0,		100,		4200000},
-		{101,		450,		4400000},
-		{451,		550,		4200000},
+		{0,			100,		4000000},
+		{101,		450,		4200000},
+		{451,		550,		4000000},
 	},
 };
 
