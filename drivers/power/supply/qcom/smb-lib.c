@@ -2664,13 +2664,16 @@ int smblib_get_prop_die_health(struct smb_charger *chg,
 #define SDP_CURRENT_UA			500000
 #define CDP_CURRENT_UA			1500000
 #ifdef CONFIG_MACH_ASUS_X00T
-#define DCP_CURRENT_UA			500000
-#else
+#define DCP_CURRENT_UA			1000000
 #define DCP_CURRENT_UA			1500000
+#define DCP_CURRENT_UA			2000000
+#else
+#define DCP_CURRENT_UA			2500000
+#define DCP_CURRENT_UA			3000000
 #endif
 #define HVDCP_CURRENT_UA		3000000
-#define TYPEC_DEFAULT_CURRENT_UA	900000
-#define TYPEC_MEDIUM_CURRENT_UA		1500000
+#define TYPEC_DEFAULT_CURRENT_UA	2000000
+#define TYPEC_MEDIUM_CURRENT_UA		2000000
 #define TYPEC_HIGH_CURRENT_UA		3000000
 static int get_rp_based_dcp_current(struct smb_charger *chg, int typec_mode)
 {
@@ -3413,9 +3416,6 @@ void asus_batt_RTC_work(struct work_struct *dat)
 	spin_unlock_irqrestore(&bat_alarm_slock, batflags);
 }
 
-#define ICL_475mA	0x12
-#define ICL_500mA	0x13
-#define ICL_950mA	0x26
 #define ICL_1000mA	0x28
 #define ICL_1425mA	0x39
 #define ICL_1500mA	0x3C
