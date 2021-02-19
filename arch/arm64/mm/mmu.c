@@ -663,7 +663,6 @@ void hotplug_paging(phys_addr_t start, phys_addr_t size)
 
 	for_each_possible_cpu(cpu)
 		if (current->cpu != cpu)
-			sched_isolate_cpu(cpu);
 	pgd_phys = pgd_pgtable_alloc();
 	pgd = pgd_set_fixmap(pgd_phys);
 
@@ -682,8 +681,7 @@ void hotplug_paging(phys_addr_t start, phys_addr_t size)
 	pgtable_page_dtor(pg);
 	__free_pages(pg, 0);
 	for_each_possible_cpu(cpu)
-		if (current->cpu != cpu)
-			sched_unisolate_cpu_unlocked(cpu);
+		if (current->cpu != cpu);
 }
 
 #ifdef CONFIG_MEMORY_HOTREMOVE
