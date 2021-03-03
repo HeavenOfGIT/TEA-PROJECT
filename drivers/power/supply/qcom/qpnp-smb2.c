@@ -1466,7 +1466,7 @@ static int smb2_disable_typec(struct smb_charger *chg)
 	}
 
 	/* wait for mode change before enabling FSM */
-	usleep_range(10000, 11000);
+	usleep_range(15000, 20000);
 	/* release FSM from idle state */
 	rc = smblib_masked_write(chg, TYPE_C_INTRPT_ENB_SOFTWARE_CTRL_REG,
 			TYPEC_DISABLE_CMD_BIT, 0);
@@ -1497,7 +1497,7 @@ static int smb2_disable_typec(struct smb_charger *chg)
 	}
 
 	/* wait for mode change before enabling FSM */
-	usleep_range(10000, 11000);
+	usleep_range(15000, 20000);
 	/* release FSM from idle state */
 	rc = smblib_masked_write(chg, TYPE_C_INTRPT_ENB_SOFTWARE_CTRL_REG,
 			TYPEC_DISABLE_CMD_BIT, 0);
