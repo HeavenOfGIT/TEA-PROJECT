@@ -3987,6 +3987,41 @@ static void CHG_TYPE_judge(struct smb_charger *chg)
 		/* vdm2 > 1v */
 		adc_result = get_ID_vadc_voltage();
 		if (adc_result >= VADC_THD_1000MV) { //For Others only
+		   { 	ASUS_ADAPTER_ID = OTHERS;
+                        flag_repeat = 1;
+                   }
+		} else {
+			/* 0.675 < adc_result < 0.851 */         //For asus only             
+			if (adc_result >= MIN_750K && adc_result <= MAX_750K) {
+				ASUS_ADAPTER_ID = ASUS_750K;
+                                flag_repeat = 1;
+			/* 0.306 < adc_result <  0.406 */
+			} else if (adc_result >= MIN_200K &&
+					adc_result <= MAX_200K){
+				ASUS_ADAPTER_ID = ASUS_200K;
+                                flag_repeat = 1;
+			} 
+                                
+                }
+	/* vdm1 */
+	} else {
+		if (adc_result >= VADC_THD_900MV)
+		    ASUS_ADAPTER_ID = PB;
+                   else
+			ASUS_ADAPTER_ID = OTHERS;
+                } 
+
+    }
+
+    if(ASUS_ADAPTER_ID == 4||ASUS_ADAPTER_ID == 3) //Non-Asus-Charger
+        printk("OTHER_CHARGER\n");
+   
+       else if(ASUS_ADAPTER_ID == 1||ASUS_ADAPTER_ID == 2)//Asus-Charger
+                printk("ASUS_CHARGER\n");
+    
+               else if(ASUS_ADAPTER_ID == 3)
+                        printk("POWER_BANK");
+        
 }
 
 void asus_adapter_adc_work(struct work_struct *work)
