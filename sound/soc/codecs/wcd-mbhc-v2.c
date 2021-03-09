@@ -50,7 +50,7 @@
 #define FW_READ_ATTEMPTS 15
 #define FW_READ_TIMEOUT 4000000
 #define FAKE_REM_RETRY_ATTEMPTS 3
-#define MAX_IMPED 100000
+#define MAX_IMPED 110000
 
 #define WCD_MBHC_BTN_PRESS_COMPL_TIMEOUT_MS  50
 #define ANC_DETECT_RETRY_CNT 7
@@ -77,7 +77,7 @@ static void wcd_mbhc_jack_report(struct wcd_mbhc *mbhc,
 				struct snd_soc_jack *jack, int status, int mask)
 {
 #ifdef CONFIG_MACH_ASUS_X00T
-	pr_err("%s:%x,%x",__func__,status,mask);
+	pr_debug("%s:%x,%x",__func__,status,mask);
 	if((status == 0x9 && mask == 0x3cf) || (status == 0xb && mask == 0x3cf))
 		hph_state = 1;
 	else
@@ -1607,7 +1607,7 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 
 #ifdef CONFIG_MACH_ASUS_X00T
 	#if 0
-	pr_err("%s: %s external headphone switch\n", __func__,detection_type ? "Enable" : "Disable");
+	pr_debug("%s: %s external headphone switch\n", __func__,detection_type ? "Enable" : "Disable");
 
 	if (!gpio_is_valid(hph_ext_en_gpio) || !gpio_is_valid(hph_ext_sw_gpio)) {
 		pr_err("%s: Invalid gpio: %d,%d\n", __func__,hph_ext_en_gpio,hph_ext_sw_gpio);
