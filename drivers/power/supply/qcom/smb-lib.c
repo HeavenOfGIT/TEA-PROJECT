@@ -3975,6 +3975,8 @@ void asus_adapter_adc_work(struct work_struct *work)
 
 
 	msleep(5);
+       	CHG_TYPE_judge(smbchg_dev);
+
     	usb_max_current = ICL_3000mA;
 
 	rc = smblib_set_usb_suspend(smbchg_dev, 0);
