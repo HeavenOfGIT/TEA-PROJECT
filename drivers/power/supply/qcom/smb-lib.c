@@ -64,6 +64,7 @@ extern struct timespec last_jeita_time;
 static struct alarm bat_alarm;
 /* global gpio_control */
 extern struct gpio_control *global_gpio;
+static int ASUS_ADAPTER_ID;
 void smblib_asus_monitor_start(struct smb_charger *chg, int time);
 
 bool smartchg_stop_flag;
