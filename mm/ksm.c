@@ -1783,7 +1783,7 @@ static signed long __sched deferred_schedule_timeout(signed long timeout)
 
 	__set_current_state(TASK_INTERRUPTIBLE);
 	if (timeout < 0) {
-		pr_err("schedule_timeout: wrong timeout value %lx\n",
+		pr_debug("schedule_timeout: wrong timeout value %lx\n",
 							timeout);
 		__set_current_state(TASK_RUNNING);
 		goto out;
@@ -2439,7 +2439,7 @@ static int __init ksm_init(void)
 
 	ksm_thread = kthread_run(ksm_scan_thread, NULL, "ksmd");
 	if (IS_ERR(ksm_thread)) {
-		pr_err("ksm: creating kthread failed\n");
+		pr_debug("ksm: creating kthread failed\n");
 		err = PTR_ERR(ksm_thread);
 		goto out_free;
 	}
@@ -2447,7 +2447,7 @@ static int __init ksm_init(void)
 #ifdef CONFIG_SYSFS
 	err = sysfs_create_group(mm_kobj, &ksm_attr_group);
 	if (err) {
-		pr_err("ksm: register sysfs failed\n");
+		pr_debug("ksm: register sysfs failed\n");
 		kthread_stop(ksm_thread);
 		goto out_free;
 	}

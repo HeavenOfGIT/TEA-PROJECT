@@ -233,7 +233,7 @@ static int __meminit init_section_page_ext(unsigned long pfn, int nid)
 	kmemleak_not_leak(base);
 
 	if (!base) {
-		pr_err("page ext allocation failure\n");
+		pr_debug("page ext allocation failure\n");
 		return -ENOMEM;
 	}
 

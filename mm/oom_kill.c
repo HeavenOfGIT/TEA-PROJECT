@@ -533,7 +533,7 @@ void oom_kill_process(struct oom_control *oc, struct task_struct *p,
 	if (__ratelimit(&oom_rs))
 		dump_header(oc, p, memcg);
 
-	pr_err("%s: Kill process %d (%s) score %u or sacrifice child\n",
+	pr_debug("%s: Kill process %d (%s) score %u or sacrifice child\n",
 		message, task_pid_nr(p), p->comm, points);
 
 	/*
@@ -592,7 +592,7 @@ void oom_kill_process(struct oom_control *oc, struct task_struct *p,
 	 */
 	do_send_sig_info(SIGKILL, SEND_SIG_FORCED, victim, true);
 	mark_oom_victim(victim);
-	pr_err("Killed process %d (%s) total-vm:%lukB, anon-rss:%lukB, file-rss:%lukB\n",
+	pr_debug("Killed process %d (%s) total-vm:%lukB, anon-rss:%lukB, file-rss:%lukB\n",
 		task_pid_nr(victim), victim->comm, K(victim->mm->total_vm),
 		K(get_mm_counter(victim->mm, MM_ANONPAGES)),
 		K(get_mm_counter(victim->mm, MM_FILEPAGES)));

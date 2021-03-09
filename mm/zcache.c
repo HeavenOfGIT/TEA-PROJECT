@@ -333,13 +333,13 @@ static int __zcache_cpu_notifier(unsigned long action, unsigned long cpu)
 	case CPU_UP_PREPARE:
 		tfm = crypto_alloc_comp(zcache_compressor, 0, 0);
 		if (IS_ERR(tfm)) {
-			pr_err("can't allocate compressor transform\n");
+			pr_debug("can't allocate compressor transform\n");
 			return NOTIFY_BAD;
 		}
 		*per_cpu_ptr(zcache_comp_pcpu_tfms, cpu) = tfm;
 		dst = kmalloc(PAGE_SIZE * 2, GFP_KERNEL);
 		if (!dst) {
-			pr_err("can't allocate compressor buffer\n");
+			pr_debug("can't allocate compressor buffer\n");
 			crypto_free_comp(tfm);
 			*per_cpu_ptr(zcache_comp_pcpu_tfms, cpu) = NULL;
 			return NOTIFY_BAD;
@@ -684,7 +684,7 @@ static void zcache_store_page(int pool_id, struct cleancache_filekey key,
 			&zlen);
 	kunmap_atomic(src);
 	if (ret) {
-		pr_err("zcache compress error ret %d\n", ret);
+		pr_debug("zcache compress error ret %d\n", ret);
 		put_cpu_var(zcache_dstmem);
 		return;
 	}
@@ -971,7 +971,7 @@ static int zcache_create_pool(void)
 
 	spin_lock(&zcache.pool_lock);
 	if (zcache.num_pools == MAX_ZCACHE_POOLS) {
-		pr_err("Cannot create new pool (limit:%u)\n", MAX_ZCACHE_POOLS);
+		pr_debug("Cannot create new pool (limit:%u)\n", MAX_ZCACHE_POOLS);
 		zbud_destroy_pool(zpool->pool);
 		kfree(zpool);
 		ret = -EPERM;
@@ -1132,16 +1132,16 @@ static int __init init_zcache(void)
 
 	pr_info("loading zcache..\n");
 	if (zcache_rbnode_cache_create()) {
-		pr_err("entry cache creation failed\n");
+		pr_debug("entry cache creation failed\n");
 		goto error;
 	}
 
 	if (zcache_comp_init()) {
-		pr_err("compressor initialization failed\n");
+		pr_debug("compressor initialization failed\n");
 		goto compfail;
 	}
 	if (zcache_cpu_init()) {
-		pr_err("per-cpu initialization failed\n");
+		pr_debug("per-cpu initialization failed\n");
 		goto pcpufail;
 	}
 

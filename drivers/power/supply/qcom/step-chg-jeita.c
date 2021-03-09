@@ -230,7 +230,7 @@ static int handle_step_chg_config(struct step_chg_info *chip)
 	rc = power_supply_get_property(chip->batt_psy,
 				step_chg_config.psy_prop, &pval);
 	if (rc < 0) {
-		pr_err("Couldn't read %s property rc=%d\n",
+		pr_debug("Couldn't read %s property rc=%d\n",
 				step_chg_config.prop_name, rc);
 		return rc;
 	}
@@ -294,7 +294,7 @@ static int handle_jeita(struct step_chg_info *chip)
 	rc = power_supply_get_property(chip->batt_psy,
 				jeita_fcc_config.psy_prop, &pval);
 	if (rc < 0) {
-		pr_err("Couldn't read %s property rc=%d\n",
+		pr_debug("Couldn't read %s property rc=%d\n",
 				step_chg_config.prop_name, rc);
 		return rc;
 	}
@@ -376,13 +376,13 @@ static void status_change_work(struct work_struct *work)
 	if (rc > 0)
 		reschedule_jeita_work_us = rc;
 	else if (rc < 0)
-		pr_err("Couldn't handle sw jeita rc = %d\n", rc);
+		pr_debug("Couldn't handle sw jeita rc = %d\n", rc);
 
 	rc = handle_step_chg_config(chip);
 	if (rc > 0)
 		reschedule_step_work_us = rc;
 	if (rc < 0)
-		pr_err("Couldn't handle step rc = %d\n", rc);
+		pr_debug("Couldn't handle step rc = %d\n", rc);
 
 	reschedule_us = min(reschedule_jeita_work_us, reschedule_step_work_us);
 	if (reschedule_us == 0)
@@ -416,7 +416,7 @@ static int step_chg_register_notifier(struct step_chg_info *chip)
 	chip->nb.notifier_call = step_chg_notifier_call;
 	rc = power_supply_reg_notifier(&chip->nb);
 	if (rc < 0) {
-		pr_err("Couldn't register psy notifier rc = %d\n", rc);
+		pr_debug("Couldn't register psy notifier rc = %d\n", rc);
 		return rc;
 	}
 
@@ -429,7 +429,7 @@ int qcom_step_chg_init(bool step_chg_enable, bool sw_jeita_enable)
 	struct step_chg_info *chip;
 
 	if (the_chip) {
-		pr_err("Already initialized\n");
+		pr_debug("Already initialized\n");
 		return -EINVAL;
 	}
 
@@ -453,7 +453,7 @@ int qcom_step_chg_init(bool step_chg_enable, bool sw_jeita_enable)
 	if (step_chg_enable && (!step_chg_config.psy_prop ||
 				!step_chg_config.prop_name)) {
 		/* fail if step-chg configuration is invalid */
-		pr_err("Step-chg configuration not defined - fail\n");
+		pr_debug("Step-chg configuration not defined - fail\n");
 		rc = -ENODATA;
 		goto release_wakeup_source;
 	}
@@ -461,7 +461,7 @@ int qcom_step_chg_init(bool step_chg_enable, bool sw_jeita_enable)
 	if (sw_jeita_enable && (!jeita_fcc_config.psy_prop ||
 				!jeita_fcc_config.prop_name)) {
 		/* fail if step-chg configuration is invalid */
-		pr_err("Jeita TEMP configuration not defined - fail\n");
+		pr_debug("Jeita TEMP configuration not defined - fail\n");
 		rc = -ENODATA;
 		goto release_wakeup_source;
 	}
@@ -469,7 +469,7 @@ int qcom_step_chg_init(bool step_chg_enable, bool sw_jeita_enable)
 	if (sw_jeita_enable && (!jeita_fv_config.psy_prop ||
 				!jeita_fv_config.prop_name)) {
 		/* fail if step-chg configuration is invalid */
-		pr_err("Jeita TEMP configuration not defined - fail\n");
+		pr_debug("Jeita TEMP configuration not defined - fail\n");
 		rc = -ENODATA;
 		goto release_wakeup_source;
 	}
@@ -478,7 +478,7 @@ int qcom_step_chg_init(bool step_chg_enable, bool sw_jeita_enable)
 
 	rc = step_chg_register_notifier(chip);
 	if (rc < 0) {
-		pr_err("Couldn't register psy notifier rc = %d\n", rc);
+		pr_debug("Couldn't register psy notifier rc = %d\n", rc);
 		goto release_wakeup_source;
 	}
 

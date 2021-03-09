@@ -136,14 +136,14 @@ static void set_and_activate_threshold(uint32_t sensor_id,
 	struct sensor_threshold *threshold)
 {
 	if (sensor_set_trip(sensor_id, threshold)) {
-		pr_err("%s: Error in setting trip %d\n",
+		pr_debug("%s: Error in setting trip %d\n",
 			KBUILD_MODNAME, threshold->trip);
 		return;
 	}
 
 	if (sensor_activate_trip(sensor_id, threshold, true)) {
 		sensor_cancel_trip(sensor_id, threshold);
-		pr_err("%s: Error in enabling trip %d\n",
+		pr_debug("%s: Error in enabling trip %d\n",
 			KBUILD_MODNAME, threshold->trip);
 		return;
 	}
@@ -289,7 +289,7 @@ static void update_related_freq_table(struct cpufreq_policy *policy)
 
 	table = cpufreq_frequency_get_table(policy->cpu);
 	if (!table) {
-		pr_err("Couldn't get freq table for cpu%d\n",
+		pr_debug("Couldn't get freq table for cpu%d\n",
 				policy->cpu);
 		return;
 	}
@@ -511,7 +511,7 @@ static long msm_core_ioctl(struct file *file, unsigned int cmd,
 	case EA_LEAKAGE:
 		ret = update_userspace_power(argp);
 		if (ret)
-			pr_err("Userspace power update failed with %ld\n", ret);
+			pr_debug("Userspace power update failed with %ld\n", ret);
 		break;
 	case EA_VOLT:
 		for (i = 0; cpumask > 0; i++, cpumask >>= 1) {
@@ -614,7 +614,7 @@ static int msm_core_task_init(struct device *dev)
 	init_completion(&sampling_completion);
 	sampling_task = kthread_run(do_sampling, NULL, "msm-core:sampling");
 	if (IS_ERR(sampling_task)) {
-		pr_err("Failed to create do_sampling err: %ld\n",
+		pr_debug("Failed to create do_sampling err: %ld\n",
 				PTR_ERR(sampling_task));
 		return PTR_ERR(sampling_task);
 	}
@@ -750,7 +750,7 @@ static int msm_core_tsens_init(struct device_node *node, int cpu)
 	ret = of_property_read_string(phandle, key,
 				&sensor_type);
 	if (ret) {
-		pr_err("%s: Cannot read tsens id\n", __func__);
+		pr_debug("%s: Cannot read tsens id\n", __func__);
 		return ret;
 	}
 
@@ -795,7 +795,7 @@ static int msm_core_mpidr_init(struct device_node *phandle)
 	ret = of_property_read_u32(phandle, key,
 				&mpidr);
 	if (ret) {
-		pr_err("%s: Cannot read mpidr\n", __func__);
+		pr_debug("%s: Cannot read mpidr\n", __func__);
 		return ret;
 	}
 	return mpidr;
@@ -945,7 +945,7 @@ static int msm_core_params_init(struct platform_device *pdev)
 		key = "qcom,ea";
 		ea_node = of_parse_phandle(child_node, key, 0);
 		if (!ea_node) {
-			pr_err("%s Couldn't find the ea_node for cpu%lu\n",
+			pr_debug("%s Couldn't find the ea_node for cpu%lu\n",
 				__func__, cpu);
 			return -ENODEV;
 		}
@@ -1015,7 +1015,7 @@ static int uio_init(struct platform_device *pdev)
 
 	clnt_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!clnt_res) {
-		pr_err("resource not found\n");
+		pr_debug("resource not found\n");
 		return -ENODEV;
 	}
 
@@ -1027,7 +1027,7 @@ static int uio_init(struct platform_device *pdev)
 	ea_mem_pyhsical = clnt_res->start;
 
 	if (ea_mem_size == 0) {
-		pr_err("msm-core: memory size is zero");
+		pr_debug("msm-core: memory size is zero");
 		return -EINVAL;
 	}
 
@@ -1040,7 +1040,7 @@ static int uio_init(struct platform_device *pdev)
 
 	ret = uio_register_device(&pdev->dev, info);
 	if (ret) {
-		pr_err("uio register failed ret=%d", ret);
+		pr_debug("uio register failed ret=%d", ret);
 		return ret;
 	}
 	dev_set_drvdata(&pdev->dev, info);
@@ -1096,7 +1096,7 @@ static int msm_core_dev_probe(struct platform_device *pdev)
 
 	ret = misc_register(&msm_core_device);
 	if (ret) {
-		pr_err("%s: Error registering device %d\n", __func__, ret);
+		pr_debug("%s: Error registering device %d\n", __func__, ret);
 		goto failed;
 	}
 

@@ -1169,7 +1169,7 @@ int try_online_node(int nid)
 	mem_hotplug_begin();
 	pgdat = hotadd_new_pgdat(nid, 0);
 	if (!pgdat) {
-		pr_err("Cannot online node %d due to NULL pgdat\n", nid);
+		pr_debug("Cannot online node %d due to NULL pgdat\n", nid);
 		ret = -ENOMEM;
 		goto out;
 	}
@@ -1196,7 +1196,7 @@ static int check_hotplug_memory_range(u64 start, u64 size)
 	/* Memory range must be aligned with section */
 	if ((start_pfn & ~PAGE_SECTION_MASK) ||
 	    (nr_pages % PAGES_PER_SECTION) || (!nr_pages)) {
-		pr_err("Section-unaligned hotplug range: start 0x%llx, size 0x%llx\n",
+		pr_debug("Section-unaligned hotplug range: start 0x%llx, size 0x%llx\n",
 				(unsigned long long)start,
 				(unsigned long long)size);
 		return -EINVAL;

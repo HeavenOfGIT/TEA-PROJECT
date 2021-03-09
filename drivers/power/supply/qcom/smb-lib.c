@@ -45,7 +45,7 @@
 #endif
 
 #define smblib_err(chg, fmt, ...)		\
-	pr_err("%s: %s: " fmt, chg->name,	\
+	pr_debug("%s: %s: " fmt, chg->name,	\
 		__func__, ##__VA_ARGS__)	\
 
 #define smblib_dbg(chg, reason, fmt, ...)			\
@@ -392,7 +392,7 @@ int smblib_set_chg_freq(struct smb_chg_param *param,
 			break;
 	}
 	if (i == ARRAY_SIZE(chg_freq_list)) {
-		pr_err("Invalid frequency %d Hz\n", val_u / 2);
+		pr_debug("Invalid frequency %d Hz\n", val_u / 2);
 		return -EINVAL;
 	}
 
@@ -803,7 +803,7 @@ static void smblib_uusb_removal(struct smb_charger *chg)
 		if (val == 1) {
 			rc = gpio_direction_output(global_gpio->ADC_SW_EN, 0);
 			if (rc)
-				pr_err("%s: failed to pull-low ADC_SW_EN-gpios59\n",
+				pr_debug("%s: failed to pull-low ADC_SW_EN-gpios59\n",
 					__func__);
 			else
 				pr_debug("%s: Pull low USBSW_S\n", __func__);
@@ -816,7 +816,7 @@ static void smblib_uusb_removal(struct smb_charger *chg)
 	if (val == 1) {
 		rc = gpio_direction_output(global_gpio->ADCPWREN_PMI_GP1, 0);
 		if (rc)
-			pr_err("%s: failed to pull-low ADCPWREN_PMI_GP1-gpios34\n",
+			pr_debug("%s: failed to pull-low ADCPWREN_PMI_GP1-gpios34\n",
 				__func__);
 		else
 			pr_debug("%s: Pull low ADC_VH_EN\n", __func__);
@@ -890,7 +890,7 @@ static int smblib_get_hw_pulse_cnt(struct smb_charger *chg, int *count)
 	case PMI8998_SUBTYPE:
 		rc = smblib_read(chg, QC_PULSE_COUNT_STATUS_REG, val);
 		if (rc) {
-			pr_err("failed to read QC_PULSE_COUNT_STATUS_REG rc=%d\n",
+			pr_debug("failed to read QC_PULSE_COUNT_STATUS_REG rc=%d\n",
 					rc);
 			return rc;
 		}
@@ -900,7 +900,7 @@ static int smblib_get_hw_pulse_cnt(struct smb_charger *chg, int *count)
 		rc = smblib_multibyte_read(chg,
 				QC_PULSE_COUNT_STATUS_1_REG, val, 2);
 		if (rc) {
-			pr_err("failed to read QC_PULSE_COUNT_STATUS_1_REG rc=%d\n",
+			pr_debug("failed to read QC_PULSE_COUNT_STATUS_1_REG rc=%d\n",
 					rc);
 			return rc;
 		}
@@ -1321,7 +1321,7 @@ static int smblib_hvdcp_hw_inov_dis_vote_callback(struct votable *votable,
 		 */
 		rc = smblib_get_hw_pulse_cnt(chg, &chg->pulse_cnt);
 		if (rc < 0) {
-			pr_err("failed to read QC_PULSE_COUNT_STATUS_REG rc=%d\n",
+			pr_debug("failed to read QC_PULSE_COUNT_STATUS_REG rc=%d\n",
 					rc);
 			return rc;
 		}
@@ -2227,17 +2227,17 @@ int smblib_dp_dm(struct smb_charger *chg, int val)
 	case POWER_SUPPLY_DP_DM_FORCE_5V:
 		rc = smblib_force_vbus_voltage(chg, FORCE_5V_BIT);
 		if (rc < 0)
-			pr_err("Failed to force 5V\n");
+			pr_debug("Failed to force 5V\n");
 		break;
 	case POWER_SUPPLY_DP_DM_FORCE_9V:
 		rc = smblib_force_vbus_voltage(chg, FORCE_9V_BIT);
 		if (rc < 0)
-			pr_err("Failed to force 9V\n");
+			pr_debug("Failed to force 9V\n");
 		break;
 	case POWER_SUPPLY_DP_DM_FORCE_12V:
 		rc = smblib_force_vbus_voltage(chg, FORCE_12V_BIT);
 		if (rc < 0)
-			pr_err("Failed to force 12V\n");
+			pr_debug("Failed to force 12V\n");
 		break;
 	case POWER_SUPPLY_DP_DM_ICL_UP:
 	default:
@@ -3398,7 +3398,7 @@ void asus_batt_RTC_work(struct work_struct *dat)
 	int RTCSetInterval = 60;
 
 	if (!smbchg_dev) {
-		pr_err("%s: driver not ready yet!\n", __func__);
+		pr_debug("%s: driver not ready yet!\n", __func__);
 		return;
 	}
 
@@ -3471,7 +3471,7 @@ static int SW_recharge(struct smb_charger *chg)
 	/* reg 1006, bit2-bit0 = BATTERY_CHARGER_STATUS */
 	rc = smblib_read(chg, BATTERY_CHARGER_STATUS_1_REG, &termination_reg);
 	if (rc < 0)
-		pr_err("%s: Couldn't read BATTERY_CHARGER_STATUS_1_REG\n",
+		pr_debug("%s: Couldn't read BATTERY_CHARGER_STATUS_1_REG\n",
 			__func__);
 
 	if ((termination_reg & BATTERY_CHARGER_STATUS_MASK) == 0x78)
@@ -3492,7 +3492,7 @@ static int SW_recharge(struct smb_charger *chg)
 						CHARGING_ENABLE_CMD_BIT,
 						CHARGING_ENABLE_CMD_BIT);
 		if (rc < 0) {
-			pr_err("%s: Couldn't write charging_enable\n",
+			pr_debug("%s: Couldn't write charging_enable\n",
 				__func__);
 			return rc;
 		}
@@ -3503,7 +3503,7 @@ static int SW_recharge(struct smb_charger *chg)
 		rc = smblib_masked_write(chg, CHARGING_ENABLE_CMD_REG,
 						CHARGING_ENABLE_CMD_BIT, 0);
 		if (rc < 0) {
-			pr_err("%s: Couldn't write charging_enable\n",
+			pr_debug("%s: Couldn't write charging_enable\n",
 				__func__);
 			return rc;
 		}
@@ -3566,7 +3566,7 @@ static int jeita_status_regs_write(u8 chg_en, u8 FV_CFG, u8 FCC)
 	rc = smblib_masked_write(smbchg_dev, CHARGING_ENABLE_CMD_REG,
 					CHARGING_ENABLE_CMD_BIT, chg_en);
 	if (rc < 0) {
-		pr_err("Couldn't write charging_enable rc = %d\n", rc);
+		pr_debug("Couldn't write charging_enable rc = %d\n", rc);
 		return rc;
 	}
 
@@ -3574,7 +3574,7 @@ static int jeita_status_regs_write(u8 chg_en, u8 FV_CFG, u8 FCC)
 	rc = smblib_masked_write(smbchg_dev, FLOAT_VOLTAGE_CFG_REG,
 					FLOAT_VOLTAGE_SETTING_MASK, FV_CFG);
 	if (rc < 0) {
-		pr_err("Couldn't write FV_CFG_reg_value rc = %d\n", rc);
+		pr_debug("Couldn't write FV_CFG_reg_value rc = %d\n", rc);
 		return rc;
 	}
 
@@ -3582,14 +3582,14 @@ static int jeita_status_regs_write(u8 chg_en, u8 FV_CFG, u8 FCC)
 	rc = smblib_masked_write(smbchg_dev, FAST_CHARGE_CURRENT_CFG_REG,
 					FAST_CHARGE_CURRENT_SETTING_MASK, FCC);
 	if (rc < 0) {
-		pr_err("Couldn't write FCC_reg_value rc = %d\n", rc);
+		pr_debug("Couldn't write FCC_reg_value rc = %d\n", rc);
 		return rc;
 	}
 
 	/* reg1370, usbin_limit */
 	rc = smblib_read(smbchg_dev, USBIN_CURRENT_LIMIT_CFG_REG, &ICL_reg);
 	if (rc < 0)
-		pr_err("%s: Couldn't read USBIN_CURRENT_LIMIT_CFG_REG\n",
+		pr_debug("%s: Couldn't read USBIN_CURRENT_LIMIT_CFG_REG\n",
 			__func__);
 
 	pr_debug("jeita_status_regs_write  ICL = 0x%x\n", ICL_reg);
@@ -3598,7 +3598,7 @@ static int jeita_status_regs_write(u8 chg_en, u8 FV_CFG, u8 FCC)
 	/* reg1370, usbin_limit */
 	rc = smblib_read(smbchg_dev, USBIN_CURRENT_LIMIT_CFG_REG, &ICL_reg);
 	if (rc < 0)
-		pr_err("%s: Couldn't read USBIN_CURRENT_LIMIT_CFG_REG\n",
+		pr_debug("%s: Couldn't read USBIN_CURRENT_LIMIT_CFG_REG\n",
 			__func__);
 
 	pr_debug("jeita_status_regs_write ICL2 = 0x%x\n", ICL_reg);
@@ -3614,10 +3614,10 @@ void asus_update_usb_connector_state(struct smb_charger *chip)
 	chip->gpio12_vadc_dev = qpnp_get_vadc(chip->dev, "chg-alert");
 
 	if (IS_ERR(chip->gpio12_vadc_dev)) {
-		pr_err("Error get chg_alert vadc rc = %d\n", rc);
+		pr_debug("Error get chg_alert vadc rc = %d\n", rc);
 		rc = PTR_ERR(chip->gpio12_vadc_dev);
 		if (rc != -EPROBE_DEFER)
-			pr_err("Couldn't get chg_alert vadc rc = %d\n",
+			pr_debug("Couldn't get chg_alert vadc rc = %d\n",
 				rc);
 		return;
 	}
@@ -3655,29 +3655,29 @@ void jeita_rule(void)
 	 */
 	rc = smblib_write(smbchg_dev, JEITA_EN_CFG_REG, 0x10);
 	if (rc < 0)
-		pr_err("%s: Failed to set JEITA_EN_CFG_REG\n", __func__);
+		pr_debug("%s: Failed to set JEITA_EN_CFG_REG\n", __func__);
 
 	/* reg1070, FLOAT_VOLTAGE */
 	rc = smblib_read(smbchg_dev, FLOAT_VOLTAGE_CFG_REG, &FV_reg);
 	if (rc < 0)
-		pr_err("%s: Couldn't read FLOAT_VOLTAGE_CFG_REG\n", __func__);
+		pr_debug("%s: Couldn't read FLOAT_VOLTAGE_CFG_REG\n", __func__);
 
 	/* reg1370, usbin_limit */
 	rc = smblib_read(smbchg_dev, USBIN_CURRENT_LIMIT_CFG_REG, &ICL_reg);
 	if (rc < 0)
-		pr_err("%s: Couldn't read USBIN_CURRENT_LIMIT_CFG_REG\n",
+		pr_debug("%s: Couldn't read USBIN_CURRENT_LIMIT_CFG_REG\n",
 			__func__);
 
 	/* reg=1061, fast cc */
 	rc = smblib_read(smbchg_dev, FAST_CHARGE_CURRENT_CFG_REG, &FCC_reg);
 	if (rc < 0)
-		pr_err("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
+		pr_debug("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
 			__func__);
 
 	/* reg=1366 */
 	rc = smblib_read(smbchg_dev, USBIN_ICL_OPTIONS_REG, &USBIN_ICL_reg);
 	if (rc < 0)
-		pr_err("%s: Couldn't read USBIN_ICL_reg\n", __func__);
+		pr_debug("%s: Couldn't read USBIN_ICL_reg\n", __func__);
 
 	pr_debug("jeita_rule Read fast CC=0x%x, USBIN_ICL_reg=0x%x\n", FCC_reg,
 			USBIN_ICL_reg);
@@ -3716,7 +3716,7 @@ void jeita_rule(void)
 
 		rc = SW_recharge(smbchg_dev);
 		if (rc < 0)
-			pr_err("%s: SW_recharge failed rc = %d\n", __func__,
+			pr_debug("%s: SW_recharge failed rc = %d\n", __func__,
 				rc);
 
 		break;
@@ -3735,7 +3735,7 @@ void jeita_rule(void)
 
 		rc = SW_recharge(smbchg_dev);
 		if (rc < 0)
-			pr_err("%s: SW_recharge failed rc = %d\n", __func__,
+			pr_debug("%s: SW_recharge failed rc = %d\n", __func__,
 				rc);
 
 		break;
@@ -3760,7 +3760,7 @@ void jeita_rule(void)
 	rc = jeita_status_regs_write(charging_enable, FV_CFG_reg_value,
 					FCC_reg_value);
 	if (rc < 0)
-		pr_err("%s: Couldn't write jeita_status_register rc = %d\n",
+		pr_debug("%s: Couldn't write jeita_status_register rc = %d\n",
 			__func__, rc);
 }
 
@@ -3769,7 +3769,7 @@ void asus_min_monitor_work(struct work_struct *work)
 	int rc;
 
 	if (!smbchg_dev) {
-		pr_err("%s: smbchg_dev is null due to driver probed isn't ready\n",
+		pr_debug("%s: smbchg_dev is null due to driver probed isn't ready\n",
 			__func__);
 		return;
 	}
@@ -3846,7 +3846,7 @@ void asus_chg_flow_work(struct work_struct *work)
 		rc = smblib_read(smbchg_dev, USBIN_CURRENT_LIMIT_CFG_REG,
 					&USBIN_1_cc);
 		if (rc < 0)
-			pr_err("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
+			pr_debug("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
 				__func__);
 
 		rc = smblib_masked_write(smbchg_dev,
@@ -3854,7 +3854,7 @@ void asus_chg_flow_work(struct work_struct *work)
 						USBIN_CURRENT_LIMIT_MASK,
 						set_icl);
 		if (rc < 0)
-			pr_err("%s: Failed to set USBIN_CURRENT_LIMIT\n",
+			pr_debug("%s: Failed to set USBIN_CURRENT_LIMIT\n",
 				__func__);
 
 		asus_smblib_rerun_aicl(smbchg_dev);
@@ -3872,14 +3872,14 @@ void asus_chg_flow_work(struct work_struct *work)
 						USBIN_CURRENT_LIMIT_MASK,
 						set_icl);
 		if (rc < 0)
-			pr_err("%s: Failed to set USBIN_CURRENT_LIMIT\n",
+			pr_debug("%s: Failed to set USBIN_CURRENT_LIMIT\n",
 				__func__);
 
 		/* reg=1370 */
 		rc = smblib_read(smbchg_dev, USBIN_CURRENT_LIMIT_CFG_REG,
 					&USBIN_1_cc);
 		if (rc < 0)
-			pr_err("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
+			pr_debug("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
 				__func__);
 
 		asus_smblib_rerun_aicl(smbchg_dev);
@@ -3897,7 +3897,7 @@ void asus_chg_flow_work(struct work_struct *work)
 						USBIN_CURRENT_LIMIT_MASK,
 						set_icl);
 		if (rc < 0)
-			pr_err("%s: Failed to set USBIN_CURRENT_LIMIT\n",
+			pr_debug("%s: Failed to set USBIN_CURRENT_LIMIT\n",
 				__func__);
 
 		asus_smblib_rerun_aicl(smbchg_dev);
@@ -3913,7 +3913,7 @@ void asus_chg_flow_work(struct work_struct *work)
 		rc = smblib_read(smbchg_dev, USBIN_CURRENT_LIMIT_CFG_REG,
 					&USBIN_1_cc);
 		if (rc < 0)
-			pr_err("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
+			pr_debug("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
 				__func__);
 
 		/* reg=1370 bit7-bit0 */
@@ -3924,14 +3924,14 @@ void asus_chg_flow_work(struct work_struct *work)
 						USBIN_CURRENT_LIMIT_MASK,
 						set_icl);
 		if (rc < 0)
-			pr_err("%s: Failed to set USBIN_CURRENT_LIMIT\n",
+			pr_debug("%s: Failed to set USBIN_CURRENT_LIMIT\n",
 				__func__);
 
 		/* reg=1370 */
 		rc = smblib_read(smbchg_dev, USBIN_CURRENT_LIMIT_CFG_REG,
 					&USBIN_1_cc);
 		if (rc < 0)
-			pr_err("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
+			pr_debug("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
 				__func__);
 
 		/* USB DPDM Switch to ADC (2D) */
@@ -3939,7 +3939,7 @@ void asus_chg_flow_work(struct work_struct *work)
 		if (!rc)
 			pr_debug("%s: Pull high USBSW_S\n", __func__);
 		else {
-			pr_err("%s: failed to pull-high ADC_SW_EN-gpios59\n",
+			pr_debug("%s: failed to pull-high ADC_SW_EN-gpios59\n",
 				__func__);
 			break;
 		}
@@ -3977,7 +3977,7 @@ static void CHG_TYPE_judge(struct smb_charger *chg)
 	if (adc_result <= VADC_THD_300MV) {
 		ret = gpio_direction_output(global_gpio->ADCPWREN_PMI_GP1, 1);
 		if (ret)
-			pr_err("%s: failed to pull-high ADCPWREN_PMI_GP1-gpios34\n",
+			pr_debug("%s: failed to pull-high ADCPWREN_PMI_GP1-gpios34\n",
 				__func__);
 		else
 			pr_debug("%s: Pull high ADC_VH_EN\n", __func__);
@@ -4042,7 +4042,7 @@ void asus_adapter_adc_work(struct work_struct *work)
 	rc = smblib_read(smbchg_dev, USBIN_CURRENT_LIMIT_CFG_REG,
 				&USBIN_CURRENT_LIMIT_reg);
 	if (rc < 0)
-		pr_err("%s: Failed to set USBIN_OPTIONS_1_CFG_REG\n",
+		pr_debug("%s: Failed to set USBIN_OPTIONS_1_CFG_REG\n",
 			__func__);
 
 
@@ -4059,14 +4059,14 @@ void asus_adapter_adc_work(struct work_struct *work)
 	/* Ara:  close gpio in order */
 	rc = gpio_direction_output(global_gpio->ADCPWREN_PMI_GP1, 0);
 	if (rc)
-		pr_err("%s: failed to pull-low ADCPWREN_PMI_GP1-gpios34\n",
+		pr_debug("%s: failed to pull-low ADCPWREN_PMI_GP1-gpios34\n",
 			__func__);
 	else
 		pr_debug("%s: Pull low ADC_VH_EN\n", __func__);
 
 	rc = gpio_direction_output(global_gpio->ADC_SW_EN, 0);
 	if (rc)
-		pr_err("%s: failed to pull-low ADC_SW_EN-gpios59\n", __func__);
+		pr_debug("%s: failed to pull-low ADC_SW_EN-gpios59\n", __func__);
 	else
 		pr_debug("%s: Pull low USBSW_S\n", __func__);
 
@@ -4079,7 +4079,7 @@ void asus_adapter_adc_work(struct work_struct *work)
 	rc = smblib_masked_write(smbchg_dev, USBIN_CURRENT_LIMIT_CFG_REG,
 		USBIN_CURRENT_LIMIT_MASK, usb_max_current);
 	if (rc < 0)
-		pr_err("%s: Failed to set USBIN_CURRENT_LIMIT\n", __func__);
+		pr_debug("%s: Failed to set USBIN_CURRENT_LIMIT\n", __func__);
 
 	asus_smblib_rerun_aicl(smbchg_dev);
 
@@ -4196,18 +4196,18 @@ void asus_insertion_initial_settings(struct smb_charger *chg)
 	/* reg=1370 usb in current */
 	rc = smblib_read(chg, USBIN_CURRENT_LIMIT_CFG_REG, &USBIN_cc);
 	if (rc < 0)
-		pr_err("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
+		pr_debug("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
 			__func__);
 
 	rc = smblib_masked_write(chg, USBIN_CURRENT_LIMIT_CFG_REG,
 					USBIN_CURRENT_LIMIT_MASK, 0x14);
 	if (rc < 0)
-		pr_err("%s: Failed to set USBIN_CURRENT_LIMIT\n", __func__);
+		pr_debug("%s: Failed to set USBIN_CURRENT_LIMIT\n", __func__);
 
 	/* reg=1370 usb in current */
 	rc = smblib_read(chg, USBIN_CURRENT_LIMIT_CFG_REG, &USBIN_cc);
 	if (rc < 0)
-		pr_err("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
+		pr_debug("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
 			__func__);
 }
 #endif /* CONFIG_MACH_ASUS_X00T */
@@ -4740,7 +4740,7 @@ static void smblib_force_legacy_icl(struct smb_charger *chg, int pst)
 		/* reg=1370 */
 		rc = smblib_read(chg, USBIN_CURRENT_LIMIT_CFG_REG, &USBIN_1_cc);
 		if (rc < 0)
-			pr_err("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
+			pr_debug("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
 				__func__);
 #endif
 
@@ -4751,7 +4751,7 @@ static void smblib_force_legacy_icl(struct smb_charger *chg, int pst)
 		/* reg=1370 */
 		rc = smblib_read(chg, USBIN_CURRENT_LIMIT_CFG_REG, &USBIN_1_cc);
 		if (rc < 0)
-			pr_err("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
+			pr_debug("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
 				__func__);
 #endif
 
@@ -5294,7 +5294,7 @@ static void smblib_handle_rp_change(struct smb_charger *chg, int typec_mode)
 	/* reg=1370 */
 	rc = smblib_read(chg, USBIN_CURRENT_LIMIT_CFG_REG, &USBIN_1_cc);
 	if (rc < 0)
-		pr_err("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
+		pr_debug("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
 			__func__);
 #endif
 
@@ -5305,7 +5305,7 @@ static void smblib_handle_rp_change(struct smb_charger *chg, int typec_mode)
 	/* reg=1370 */
 	rc = smblib_read(chg, USBIN_CURRENT_LIMIT_CFG_REG, &USBIN_1_cc);
 	if (rc < 0)
-		pr_err("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
+		pr_debug("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n",
 			__func__);
 #endif
 }

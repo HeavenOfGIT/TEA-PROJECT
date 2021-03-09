@@ -151,7 +151,7 @@ static int start_stop_khugepaged(void)
 			khugepaged_thread = kthread_run(khugepaged, NULL,
 							"khugepaged");
 		if (IS_ERR(khugepaged_thread)) {
-			pr_err("khugepaged: kthread_run(khugepaged) failed\n");
+			pr_debug("khugepaged: kthread_run(khugepaged) failed\n");
 			err = PTR_ERR(khugepaged_thread);
 			khugepaged_thread = NULL;
 			goto fail;
@@ -574,19 +574,19 @@ static int __init hugepage_init_sysfs(struct kobject **hugepage_kobj)
 
 	*hugepage_kobj = kobject_create_and_add("transparent_hugepage", mm_kobj);
 	if (unlikely(!*hugepage_kobj)) {
-		pr_err("failed to create transparent hugepage kobject\n");
+		pr_debug("failed to create transparent hugepage kobject\n");
 		return -ENOMEM;
 	}
 
 	err = sysfs_create_group(*hugepage_kobj, &hugepage_attr_group);
 	if (err) {
-		pr_err("failed to register transparent hugepage group\n");
+		pr_debug("failed to register transparent hugepage group\n");
 		goto delete_obj;
 	}
 
 	err = sysfs_create_group(*hugepage_kobj, &khugepaged_attr_group);
 	if (err) {
-		pr_err("failed to register transparent hugepage group\n");
+		pr_debug("failed to register transparent hugepage group\n");
 		goto remove_hp_group;
 	}
 
@@ -1973,7 +1973,7 @@ static void __split_huge_page(struct page *page,
 	 * walk, to be able to set it as pmd_trans_splitting too.
 	 */
 	if (mapcount != page_mapcount(page)) {
-		pr_err("mapcount %d page_mapcount %d\n",
+		pr_debug("mapcount %d page_mapcount %d\n",
 			mapcount, page_mapcount(page));
 		BUG();
 	}
@@ -1988,7 +1988,7 @@ static void __split_huge_page(struct page *page,
 		mapcount2 += __split_huge_page_map(page, vma, addr);
 	}
 	if (mapcount != mapcount2) {
-		pr_err("mapcount %d mapcount2 %d page_mapcount %d\n",
+		pr_debug("mapcount %d mapcount2 %d page_mapcount %d\n",
 			mapcount, mapcount2, page_mapcount(page));
 		BUG();
 	}

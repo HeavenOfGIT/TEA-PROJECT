@@ -224,7 +224,7 @@ static int __init page_idle_init(void)
 
 	err = sysfs_create_group(mm_kobj, &page_idle_attr_group);
 	if (err) {
-		pr_err("page_idle: register sysfs failed\n");
+		pr_debug("page_idle: register sysfs failed\n");
 		return err;
 	}
 	return 0;

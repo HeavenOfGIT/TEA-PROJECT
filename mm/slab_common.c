@@ -73,7 +73,7 @@ static int kmem_cache_sanity_check(const char *name, size_t size)
 
 	if (!name || in_interrupt() || size < sizeof(void *) ||
 		size > KMALLOC_MAX_SIZE) {
-		pr_err("kmem_cache_create(%s) integrity check failed\n", name);
+		pr_debug("kmem_cache_create(%s) integrity check failed\n", name);
 		return -EINVAL;
 	}
 
@@ -88,7 +88,7 @@ static int kmem_cache_sanity_check(const char *name, size_t size)
 		 */
 		res = probe_kernel_address(s->name, tmp);
 		if (res) {
-			pr_err("Slab cache with size %d has lost its name\n",
+			pr_debug("Slab cache with size %d has lost its name\n",
 			       s->object_size);
 			continue;
 		}
@@ -729,7 +729,7 @@ void kmem_cache_destroy(struct kmem_cache *s)
 		err = shutdown_cache(s, &release, &need_rcu_barrier);
 
 	if (err) {
-		pr_err("kmem_cache_destroy %s: Slab cache still has objects\n",
+		pr_debug("kmem_cache_destroy %s: Slab cache still has objects\n",
 		       s->name);
 		dump_stack();
 	}

@@ -29,9 +29,9 @@ static void poison_error(mempool_t *pool, void *element, size_t size,
 	const int end = min_t(int, byte + (BITS_PER_LONG / 8), size);
 	int i;
 
-	pr_err("BUG: mempool element poison mismatch\n");
-	pr_err("Mempool %p size %zu\n", pool, size);
-	pr_err(" nr=%d @ %p: %s0x", nr, element, start > 0 ? "... " : "");
+	pr_debug("BUG: mempool element poison mismatch\n");
+	pr_debug("Mempool %p size %zu\n", pool, size);
+	pr_debug(" nr=%d @ %p: %s0x", nr, element, start > 0 ? "... " : "");
 	for (i = start; i < end; i++)
 		pr_cont("%x ", *(u8 *)(element + i));
 	pr_cont("%s\n", end < size ? "..." : "");

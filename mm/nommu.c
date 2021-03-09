@@ -1216,7 +1216,7 @@ error_free:
 	return ret;
 
 enomem:
-	pr_err("Allocation of length %lu from process %d (%s) failed\n",
+	pr_debug("Allocation of length %lu from process %d (%s) failed\n",
 	       len, current->pid, current->comm);
 	show_free_areas(0);
 	return -ENOMEM;

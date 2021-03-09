@@ -369,7 +369,7 @@ static int __zswap_cpu_dstmem_notifier(unsigned long action, unsigned long cpu)
 	case CPU_UP_PREPARE:
 		dst = kmalloc_node(PAGE_SIZE * 2, GFP_KERNEL, cpu_to_node(cpu));
 		if (!dst) {
-			pr_err("can't allocate compressor buffer\n");
+			pr_debug("can't allocate compressor buffer\n");
 			return NOTIFY_BAD;
 		}
 		per_cpu(zswap_dstmem, cpu) = dst;
@@ -438,7 +438,7 @@ static int __zswap_cpu_comp_notifier(struct zswap_pool *pool,
 			break;
 		tfm = crypto_alloc_comp(pool->tfm_name, 0, 0);
 		if (IS_ERR_OR_NULL(tfm)) {
-			pr_err("could not alloc crypto comp %s : %ld\n",
+			pr_debug("could not alloc crypto comp %s : %ld\n",
 			       pool->tfm_name, PTR_ERR(tfm));
 			return NOTIFY_BAD;
 		}
@@ -581,7 +581,7 @@ static struct zswap_pool *zswap_pool_create(char *type, char *compressor)
 
 	pool = kzalloc(sizeof(*pool), GFP_KERNEL);
 	if (!pool) {
-		pr_err("pool alloc failed\n");
+		pr_debug("pool alloc failed\n");
 		return NULL;
 	}
 
@@ -590,7 +590,7 @@ static struct zswap_pool *zswap_pool_create(char *type, char *compressor)
 
 	pool->zpool = zpool_create_pool(type, name, gfp, &zswap_zpool_ops);
 	if (!pool->zpool) {
-		pr_err("%s zpool not available\n", type);
+		pr_debug("%s zpool not available\n", type);
 		goto error;
 	}
 	pr_debug("using %s zpool\n", zpool_get_type(pool->zpool));
@@ -598,7 +598,7 @@ static struct zswap_pool *zswap_pool_create(char *type, char *compressor)
 	strlcpy(pool->tfm_name, compressor, sizeof(pool->tfm_name));
 	pool->tfm = alloc_percpu(struct crypto_comp *);
 	if (!pool->tfm) {
-		pr_err("percpu alloc failed\n");
+		pr_debug("percpu alloc failed\n");
 		goto error;
 	}
 
@@ -628,22 +628,22 @@ static __init struct zswap_pool *__zswap_pool_create_fallback(void)
 {
 	if (!crypto_has_comp(zswap_compressor, 0, 0)) {
 		if (!strcmp(zswap_compressor, ZSWAP_COMPRESSOR_DEFAULT)) {
-			pr_err("default compressor %s not available\n",
+			pr_debug("default compressor %s not available\n",
 			       zswap_compressor);
 			return NULL;
 		}
-		pr_err("compressor %s not available, using default %s\n",
+		pr_debug("compressor %s not available, using default %s\n",
 		       zswap_compressor, ZSWAP_COMPRESSOR_DEFAULT);
 		param_free_charp(&zswap_compressor);
 		zswap_compressor = ZSWAP_COMPRESSOR_DEFAULT;
 	}
 	if (!zpool_has_pool(zswap_zpool_type)) {
 		if (!strcmp(zswap_zpool_type, ZSWAP_ZPOOL_DEFAULT)) {
-			pr_err("default zpool %s not available\n",
+			pr_debug("default zpool %s not available\n",
 			       zswap_zpool_type);
 			return NULL;
 		}
-		pr_err("zpool %s not available, using default %s\n",
+		pr_debug("zpool %s not available, using default %s\n",
 		       zswap_zpool_type, ZSWAP_ZPOOL_DEFAULT);
 		param_free_charp(&zswap_zpool_type);
 		zswap_zpool_type = ZSWAP_ZPOOL_DEFAULT;
@@ -716,7 +716,7 @@ static int __zswap_param_set(const char *val, const struct kernel_param *kp,
 	int ret;
 
 	if (zswap_init_failed) {
-		pr_err("can't set param, initialization failed\n");
+		pr_debug("can't set param, initialization failed\n");
 		return -ENODEV;
 	}
 
@@ -732,13 +732,13 @@ static int __zswap_param_set(const char *val, const struct kernel_param *kp,
 
 	if (!type) {
 		if (!zpool_has_pool(s)) {
-			pr_err("zpool %s not available\n", s);
+			pr_debug("zpool %s not available\n", s);
 			return -ENOENT;
 		}
 		type = s;
 	} else if (!compressor) {
 		if (!crypto_has_comp(s, 0, 0)) {
-			pr_err("compressor %s not available\n", s);
+			pr_debug("compressor %s not available\n", s);
 			return -ENOENT;
 		}
 		compressor = s;
@@ -807,7 +807,7 @@ static int zswap_enabled_param_set(const char *val,
 				   const struct kernel_param *kp)
 {
 	if (zswap_init_failed) {
-		pr_err("can't enable, initialization failed\n");
+		pr_debug("can't enable, initialization failed\n");
 		return -ENODEV;
 	}
 
@@ -1201,7 +1201,7 @@ static void zswap_frontswap_init(unsigned type)
 
 	tree = kzalloc(sizeof(struct zswap_tree), GFP_KERNEL);
 	if (!tree) {
-		pr_err("alloc failed, zswap disabled for swap type %d\n", type);
+		pr_debug("alloc failed, zswap disabled for swap type %d\n", type);
 		return;
 	}
 
@@ -1280,18 +1280,18 @@ static int __init init_zswap(void)
 	zswap_init_started = true;
 
 	if (zswap_entry_cache_create()) {
-		pr_err("entry cache creation failed\n");
+		pr_debug("entry cache creation failed\n");
 		goto cache_fail;
 	}
 
 	if (zswap_cpu_dstmem_init()) {
-		pr_err("dstmem alloc failed\n");
+		pr_debug("dstmem alloc failed\n");
 		goto dstmem_fail;
 	}
 
 	pool = __zswap_pool_create_fallback();
 	if (!pool) {
-		pr_err("pool creation failed\n");
+		pr_debug("pool creation failed\n");
 		goto pool_fail;
 	}
 	pr_info("loaded using pool %s/%s\n", pool->tfm_name,
