@@ -316,7 +316,7 @@ static unsigned long do_shrink_slab(struct shrink_control *shrinkctl,
 	do_div(delta, nr_eligible + 1);
 	total_scan += delta;
 	if (total_scan < 0) {
-		pr_err("shrink_slab: %pF negative objects to delete nr=%ld\n",
+		pr_debug("shrink_slab: %pF negative objects to delete nr=%ld\n",
 		       shrinker->scan_objects, total_scan);
 		total_scan = freeable;
 		next_deferred = nr;
@@ -3749,7 +3749,7 @@ int kswapd_run(int nid)
 	if (IS_ERR(pgdat->kswapd)) {
 		/* failure at boot is fatal */
 		BUG_ON(system_state == SYSTEM_BOOTING);
-		pr_err("Failed to start kswapd on node %d\n", nid);
+		pr_debug("Failed to start kswapd on node %d\n", nid);
 		ret = PTR_ERR(pgdat->kswapd);
 		pgdat->kswapd = NULL;
 	} else if (kswapd_cpu_mask) {

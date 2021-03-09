@@ -4187,8 +4187,8 @@ static int mdss_dsi_ctrl_remove(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	fb_unregister_client(&ctrl_pdata->wake_notif);
-	kthread_stop(ctrl_pdata->wake_thread);
+	fb_unregister_client(&ctrl_pdata);
+	kthread_stop(ctrl_pdata);
 
 	if (msm_dss_config_vreg(&pdev->dev,
 			ctrl_pdata->panel_power_data.vreg_config,

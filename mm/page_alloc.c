@@ -411,7 +411,7 @@ static int page_outside_zone_boundaries(struct zone *zone, struct page *page)
 	} while (zone_span_seqretry(zone, seq));
 
 	if (ret)
-		pr_err("page 0x%lx outside node %d zone %s [ 0x%lx - 0x%lx ]\n",
+		pr_debug("page 0x%lx outside node %d zone %s [ 0x%lx - 0x%lx ]\n",
 			pfn, zone_to_nid(zone), zone->name,
 			start_pfn, start_pfn + sp);
 

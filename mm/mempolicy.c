@@ -2651,7 +2651,7 @@ void __init numa_policy_init(void)
 		node_set(prefer, interleave_nodes);
 
 	if (do_set_mempolicy(MPOL_INTERLEAVE, 0, &interleave_nodes))
-		pr_err("%s: interleaving failed\n", __func__);
+		pr_debug("%s: interleaving failed\n", __func__);
 
 	check_numabalancing_enable();
 }

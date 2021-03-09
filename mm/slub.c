@@ -589,14 +589,14 @@ static void print_track(const char *s, struct track *t)
 	if (!t->addr)
 		return;
 
-	pr_err("INFO: %s in %pS age=%lu cpu=%u pid=%d\n",
+	pr_debug("INFO: %s in %pS age=%lu cpu=%u pid=%d\n",
 	       s, (void *)t->addr, jiffies - t->when, t->cpu, t->pid);
 #ifdef CONFIG_STACKTRACE
 	{
 		int i;
 		for (i = 0; i < TRACK_ADDRS_COUNT; i++)
 			if (t->addrs[i])
-				pr_err("\t%pS\n", (void *)t->addrs[i]);
+				pr_debug("\t%pS\n", (void *)t->addrs[i]);
 			else
 				break;
 	}
@@ -614,7 +614,7 @@ static void print_tracking(struct kmem_cache *s, void *object)
 
 static void print_page_info(struct page *page)
 {
-	pr_err("INFO: Slab 0x%p objects=%u used=%u fp=0x%p flags=0x%04lx\n",
+	pr_debug("INFO: Slab 0x%p objects=%u used=%u fp=0x%p flags=0x%04lx\n",
 	       page, page->objects, page->inuse, page->freelist, page->flags);
 
 }
@@ -627,9 +627,9 @@ static void slab_bug(struct kmem_cache *s, char *fmt, ...)
 	va_start(args, fmt);
 	vaf.fmt = fmt;
 	vaf.va = &args;
-	pr_err("=============================================================================\n");
-	pr_err("BUG %s (%s): %pV\n", s->name, print_tainted(), &vaf);
-	pr_err("-----------------------------------------------------------------------------\n\n");
+	pr_debug("=============================================================================\n");
+	pr_debug("BUG %s (%s): %pV\n", s->name, print_tainted(), &vaf);
+	pr_debug("-----------------------------------------------------------------------------\n\n");
 
 	add_taint(TAINT_BAD_PAGE, LOCKDEP_NOW_UNRELIABLE);
 	va_end(args);
@@ -643,7 +643,7 @@ static void slab_fix(struct kmem_cache *s, char *fmt, ...)
 	va_start(args, fmt);
 	vaf.fmt = fmt;
 	vaf.va = &args;
-	pr_err("FIX %s: %pV\n", s->name, &vaf);
+	pr_debug("FIX %s: %pV\n", s->name, &vaf);
 	va_end(args);
 }
 
@@ -656,7 +656,7 @@ static void print_trailer(struct kmem_cache *s, struct page *page, u8 *p)
 
 	print_page_info(page);
 
-	pr_err("INFO: Object 0x%p @offset=%tu fp=0x%p\n\n",
+	pr_debug("INFO: Object 0x%p @offset=%tu fp=0x%p\n\n",
 	       p, p - addr, get_freepointer(s, p));
 
 	if (s->flags & SLAB_RED_ZONE)
@@ -761,7 +761,7 @@ static int check_bytes_and_report(struct kmem_cache *s, struct page *page,
 		end--;
 
 	slab_bug(s, "%s overwritten", what);
-	pr_err("INFO: 0x%p-0x%p. First byte 0x%x instead of 0x%x\n",
+	pr_debug("INFO: 0x%p-0x%p. First byte 0x%x instead of 0x%x\n",
 					fault, end - 1, fault[0], value);
 	print_trailer(s, page, object);
 
@@ -1158,7 +1158,7 @@ next_object:
 			slab_err(s, page, "Attempt to free object(0x%p) outside of slab",
 				 object);
 		} else if (!page->slab_cache) {
-			pr_err("SLUB <none>: no slab for object 0x%p.\n",
+			pr_debug("SLUB <none>: no slab for object 0x%p.\n",
 			       object);
 			dump_stack();
 		} else
@@ -1251,7 +1251,7 @@ static int __init setup_slub_debug(char *str)
 			disable_higher_order_debug = 1;
 			break;
 		default:
-			pr_err("slub_debug option '%c' unknown. skipped\n",
+			pr_debug("slub_debug option '%c' unknown. skipped\n",
 			       *str);
 		}
 	}
@@ -3230,8 +3230,8 @@ static void early_kmem_cache_node_alloc(int node)
 
 	BUG_ON(!page);
 	if (page_to_nid(page) != node) {
-		pr_err("SLUB: Unable to allocate memory from node %d\n", node);
-		pr_err("SLUB: Allocating a useless per node structure in order to be able to continue\n");
+		pr_debug("SLUB: Unable to allocate memory from node %d\n", node);
+		pr_debug("SLUB: Allocating a useless per node structure in order to be able to continue\n");
 	}
 
 	n = page->freelist;
@@ -3522,7 +3522,7 @@ static void list_slab_objects(struct kmem_cache *s, struct page *page,
 	for_each_object(p, s, addr, page->objects) {
 
 		if (!test_bit(slab_index(p, s, addr), map)) {
-			pr_err("INFO: Object 0x%p @offset=%tu\n", p, p - addr);
+			pr_debug("INFO: Object 0x%p @offset=%tu\n", p, p - addr);
 			print_tracking(s, p);
 		}
 	}
@@ -4267,7 +4267,7 @@ static int validate_slab_node(struct kmem_cache *s,
 		count++;
 	}
 	if (count != n->nr_partial)
-		pr_err("SLUB %s: %ld partial slabs counted but counter=%ld\n",
+		pr_debug("SLUB %s: %ld partial slabs counted but counter=%ld\n",
 		       s->name, count, n->nr_partial);
 
 	if (!(s->flags & SLAB_STORE_USER))
@@ -4278,7 +4278,7 @@ static int validate_slab_node(struct kmem_cache *s,
 		count++;
 	}
 	if (count != atomic_long_read(&n->nr_slabs))
-		pr_err("SLUB: %s %ld slabs counted but counter=%ld\n",
+		pr_debug("SLUB: %s %ld slabs counted but counter=%ld\n",
 		       s->name, count, atomic_long_read(&n->nr_slabs));
 
 out:
@@ -4537,13 +4537,13 @@ static void __init resiliency_test(void)
 
 	BUILD_BUG_ON(KMALLOC_MIN_SIZE > 16 || KMALLOC_SHIFT_HIGH < 10);
 
-	pr_err("SLUB resiliency testing\n");
-	pr_err("-----------------------\n");
-	pr_err("A. Corruption after allocation\n");
+	pr_debug("SLUB resiliency testing\n");
+	pr_debug("-----------------------\n");
+	pr_debug("A. Corruption after allocation\n");
 
 	p = kzalloc(16, GFP_KERNEL);
 	p[16] = 0x12;
-	pr_err("\n1. kmalloc-16: Clobber Redzone/next pointer 0x12->0x%p\n\n",
+	pr_debug("\n1. kmalloc-16: Clobber Redzone/next pointer 0x12->0x%p\n\n",
 	       p + 16);
 
 	validate_slab_cache(kmalloc_caches[4]);
@@ -4551,36 +4551,36 @@ static void __init resiliency_test(void)
 	/* Hmmm... The next two are dangerous */
 	p = kzalloc(32, GFP_KERNEL);
 	p[32 + sizeof(void *)] = 0x34;
-	pr_err("\n2. kmalloc-32: Clobber next pointer/next slab 0x34 -> -0x%p\n",
+	pr_debug("\n2. kmalloc-32: Clobber next pointer/next slab 0x34 -> -0x%p\n",
 	       p);
-	pr_err("If allocated object is overwritten then not detectable\n\n");
+	pr_debug("If allocated object is overwritten then not detectable\n\n");
 
 	validate_slab_cache(kmalloc_caches[5]);
 	p = kzalloc(64, GFP_KERNEL);
 	p += 64 + (get_cycles() & 0xff) * sizeof(void *);
 	*p = 0x56;
-	pr_err("\n3. kmalloc-64: corrupting random byte 0x56->0x%p\n",
+	pr_debug("\n3. kmalloc-64: corrupting random byte 0x56->0x%p\n",
 	       p);
-	pr_err("If allocated object is overwritten then not detectable\n\n");
+	pr_debug("If allocated object is overwritten then not detectable\n\n");
 	validate_slab_cache(kmalloc_caches[6]);
 
-	pr_err("\nB. Corruption after free\n");
+	pr_debug("\nB. Corruption after free\n");
 	p = kzalloc(128, GFP_KERNEL);
 	kfree(p);
 	*p = 0x78;
-	pr_err("1. kmalloc-128: Clobber first word 0x78->0x%p\n\n", p);
+	pr_debug("1. kmalloc-128: Clobber first word 0x78->0x%p\n\n", p);
 	validate_slab_cache(kmalloc_caches[7]);
 
 	p = kzalloc(256, GFP_KERNEL);
 	kfree(p);
 	p[50] = 0x9a;
-	pr_err("\n2. kmalloc-256: Clobber 50th byte 0x9a->0x%p\n\n", p);
+	pr_debug("\n2. kmalloc-256: Clobber 50th byte 0x9a->0x%p\n\n", p);
 	validate_slab_cache(kmalloc_caches[8]);
 
 	p = kzalloc(512, GFP_KERNEL);
 	kfree(p);
 	p[512] = 0xab;
-	pr_err("\n3. kmalloc-512: Clobber redzone 0xab->0x%p\n\n", p);
+	pr_debug("\n3. kmalloc-512: Clobber redzone 0xab->0x%p\n\n", p);
 	validate_slab_cache(kmalloc_caches[9]);
 }
 #else
@@ -5631,7 +5631,7 @@ static int __init slab_sysfs_init(void)
 	slab_kset = kset_create_and_add("slab", &slab_uevent_ops, kernel_kobj);
 	if (!slab_kset) {
 		mutex_unlock(&slab_mutex);
-		pr_err("Cannot register slab subsystem.\n");
+		pr_debug("Cannot register slab subsystem.\n");
 		return -ENOSYS;
 	}
 
@@ -5640,7 +5640,7 @@ static int __init slab_sysfs_init(void)
 	list_for_each_entry(s, &slab_caches, list) {
 		err = sysfs_slab_add(s);
 		if (err)
-			pr_err("SLUB: Unable to add boot slab %s to sysfs\n",
+			pr_debug("SLUB: Unable to add boot slab %s to sysfs\n",
 			       s->name);
 	}
 
@@ -5650,7 +5650,7 @@ static int __init slab_sysfs_init(void)
 		alias_list = alias_list->next;
 		err = sysfs_slab_alias(al->s, al->name);
 		if (err)
-			pr_err("SLUB: Unable to add boot slab alias %s to sysfs\n",
+			pr_debug("SLUB: Unable to add boot slab alias %s to sysfs\n",
 			       al->name);
 		kfree(al);
 	}

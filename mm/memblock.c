@@ -408,7 +408,7 @@ static int __init_memblock memblock_double_array(struct memblock_type *type,
 		new_array = addr ? __va(addr) : NULL;
 	}
 	if (!addr) {
-		pr_err("memblock: Failed to double %s array from %ld to %ld entries !\n",
+		pr_debug("memblock: Failed to double %s array from %ld to %ld entries !\n",
 		       memblock_type_name(type), type->max, type->max * 2);
 		return -1;
 	}

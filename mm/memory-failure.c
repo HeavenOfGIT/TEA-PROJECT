@@ -847,7 +847,7 @@ static void action_result(unsigned long pfn, enum mf_action_page_type type,
 {
 	trace_memory_failure_event(pfn, type, result);
 
-	pr_err("MCE %#lx: recovery action for %s: %s\n",
+	pr_debug("MCE %#lx: recovery action for %s: %s\n",
 		pfn, action_page_types[type], action_name[result]);
 }
 
@@ -905,7 +905,7 @@ int get_hwpoison_page(struct page *page)
 		 * tries to touch the "partially handled" page.
 		 */
 		if (!PageAnon(head)) {
-			pr_err("MCE: %#lx: non anonymous thp\n",
+			pr_debug("MCE: %#lx: non anonymous thp\n",
 				page_to_pfn(page));
 			return 0;
 		}
@@ -975,7 +975,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
 		return SWAP_SUCCESS;
 
 	if (PageKsm(p)) {
-		pr_err("MCE %#lx: can't handle KSM pages.\n", pfn);
+		pr_debug("MCE %#lx: can't handle KSM pages.\n", pfn);
 		return SWAP_FAIL;
 	}
 
@@ -1158,9 +1158,9 @@ int memory_failure(unsigned long pfn, int trapno, int flags)
 	if (!PageHuge(p) && PageTransHuge(hpage)) {
 		if (!PageAnon(hpage) || unlikely(split_huge_page(hpage))) {
 			if (!PageAnon(hpage))
-				pr_err("MCE: %#lx: non anonymous thp\n", pfn);
+				pr_debug("MCE: %#lx: non anonymous thp\n", pfn);
 			else
-				pr_err("MCE: %#lx: thp split failed\n", pfn);
+				pr_debug("MCE: %#lx: thp split failed\n", pfn);
 			if (TestClearPageHWPoison(p))
 				num_poisoned_pages_sub(nr_pages);
 			put_hwpoison_page(p);
@@ -1363,7 +1363,7 @@ void memory_failure_queue(unsigned long pfn, int trapno, int flags)
 	if (kfifo_put(&mf_cpu->fifo, entry))
 		schedule_work_on(smp_processor_id(), &mf_cpu->work);
 	else
-		pr_err("Memory failure: buffer overflow when queuing memory failure at %#lx\n",
+		pr_debug("Memory failure: buffer overflow when queuing memory failure at %#lx\n",
 		       pfn);
 	spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
 	put_cpu_var(memory_failure_cpu);

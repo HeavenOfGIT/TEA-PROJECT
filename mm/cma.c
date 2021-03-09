@@ -179,7 +179,7 @@ int __init cma_init_reserved_mem(phys_addr_t base, phys_addr_t size,
 
 	/* Sanity checks */
 	if (cma_area_count == ARRAY_SIZE(cma_areas)) {
-		pr_err("Not enough slots for CMA reserved regions!\n");
+		pr_debug("Not enough slots for CMA reserved regions!\n");
 		return -ENOSPC;
 	}
 
@@ -255,7 +255,7 @@ int __init cma_declare_contiguous(phys_addr_t base,
 		__func__, &size, &base, &limit, &alignment);
 
 	if (cma_area_count == ARRAY_SIZE(cma_areas)) {
-		pr_err("Not enough slots for CMA reserved regions!\n");
+		pr_debug("Not enough slots for CMA reserved regions!\n");
 		return -ENOSPC;
 	}
 
@@ -275,7 +275,7 @@ int __init cma_declare_contiguous(phys_addr_t base,
 			  max_t(unsigned long, MAX_ORDER - 1, pageblock_order));
 	if (fixed && base & (alignment - 1)) {
 		ret = -EINVAL;
-		pr_err("Region at %pa must be aligned to %pa bytes\n",
+		pr_debug("Region at %pa must be aligned to %pa bytes\n",
 			&base, &alignment);
 		goto err;
 	}
@@ -296,7 +296,7 @@ int __init cma_declare_contiguous(phys_addr_t base,
 	 */
 	if (fixed && base < highmem_start && base + size > highmem_start) {
 		ret = -EINVAL;
-		pr_err("Region at %pa defined on low/high memory boundary (%pa)\n",
+		pr_debug("Region at %pa defined on low/high memory boundary (%pa)\n",
 			&base, &highmem_start);
 		goto err;
 	}
@@ -311,7 +311,7 @@ int __init cma_declare_contiguous(phys_addr_t base,
 
 	if (base + size > limit) {
 		ret = -EINVAL;
-		pr_err("Size (%pa) of region at %pa exceeds limit (%pa)\n",
+		pr_debug("Size (%pa) of region at %pa exceeds limit (%pa)\n",
 			&size, &base, &limit);
 		goto err;
 	}
@@ -368,7 +368,7 @@ int __init cma_declare_contiguous(phys_addr_t base,
 free_mem:
 	memblock_free(base, size);
 err:
-	pr_err("Failed to reserve %ld MiB\n", (unsigned long)size / SZ_1M);
+	pr_debug("Failed to reserve %ld MiB\n", (unsigned long)size / SZ_1M);
 	return ret;
 }
 

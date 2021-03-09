@@ -2600,7 +2600,7 @@ static int __init zs_init(void)
 
 	ret = zs_stat_init();
 	if (ret) {
-		pr_err("zs stat initialization failed\n");
+		pr_debug("zs stat initialization failed\n");
 		goto stat_fail;
 	}
 	return 0;

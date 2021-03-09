@@ -624,7 +624,7 @@ static bool is_usb_slave_present(struct smb135x_chg *chip)
 
 	rc = smb135x_read(chip, STATUS_6_REG, &reg);
 	if (rc < 0) {
-		pr_err("Couldn't read stat 6 rc = %d\n", rc);
+		pr_debug("Couldn't read stat 6 rc = %d\n", rc);
 		return false;
 	}
 
@@ -1424,17 +1424,17 @@ static int smb135x_system_temp_level_set(struct smb135x_chg *chip,
 	int prev_therm_lvl;
 
 	if (!chip->thermal_mitigation) {
-		pr_err("Thermal mitigation not supported\n");
+		pr_debug("Thermal mitigation not supported\n");
 		return -EINVAL;
 	}
 
 	if (lvl_sel < 0) {
-		pr_err("Unsupported level selected %d\n", lvl_sel);
+		pr_debug("Unsupported level selected %d\n", lvl_sel);
 		return -EINVAL;
 	}
 
 	if (lvl_sel >= chip->thermal_levels) {
-		pr_err("Unsupported level selected %d forcing %d\n", lvl_sel,
+		pr_debug("Unsupported level selected %d forcing %d\n", lvl_sel,
 				chip->thermal_levels - 1);
 		lvl_sel = chip->thermal_levels - 1;
 	}
@@ -2730,7 +2730,7 @@ static void smb135x_hvdcp_det_work(struct work_struct *work)
 
 	rc = smb135x_read(chip, STATUS_7_REG, &reg);
 	if (rc) {
-		pr_err("Couldn't read STATUS_7_REG rc == %d\n", rc);
+		pr_debug("Couldn't read STATUS_7_REG rc == %d\n", rc);
 		goto end;
 	}
 	pr_debug("STATUS_7_REG = 0x%02X\n", reg);
@@ -3525,7 +3525,7 @@ static int smb135x_hw_init(struct smb135x_chg *chip)
 		chip->smb_pinctrl = pinctrl_get_select(chip->dev,
 						chip->pinctrl_state_name);
 		if (IS_ERR(chip->smb_pinctrl)) {
-			pr_err("Could not get/set %s pinctrl state rc = %ld\n",
+			pr_debug("Could not get/set %s pinctrl state rc = %ld\n",
 						chip->pinctrl_state_name,
 						PTR_ERR(chip->smb_pinctrl));
 			return PTR_ERR(chip->smb_pinctrl);
@@ -3535,7 +3535,7 @@ static int smb135x_hw_init(struct smb135x_chg *chip)
 	if (chip->therm_bias_vreg) {
 		rc = regulator_enable(chip->therm_bias_vreg);
 		if (rc) {
-			pr_err("Couldn't enable therm-bias rc = %d\n", rc);
+			pr_debug("Couldn't enable therm-bias rc = %d\n", rc);
 			return rc;
 		}
 	}
@@ -3547,7 +3547,7 @@ static int smb135x_hw_init(struct smb135x_chg *chip)
 	if (chip->usb_pullup_vreg) {
 		rc = regulator_enable(chip->usb_pullup_vreg);
 		if (rc) {
-			pr_err("Unable to enable data line pull-up regulator rc=%d\n",
+			pr_debug("Unable to enable data line pull-up regulator rc=%d\n",
 					rc);
 			if (chip->therm_bias_vreg)
 				regulator_disable(chip->therm_bias_vreg);
@@ -3992,7 +3992,7 @@ static int smb_parse_dt(struct smb135x_chg *chip)
 		chip->gamma_setting_num = chip->gamma_setting_num /
 					sizeof(chip->gamma_setting_num);
 		if (NUM_GAMMA_VALUES != chip->gamma_setting_num) {
-			pr_err("Gamma setting not correct!\n");
+			pr_debug("Gamma setting not correct!\n");
 			return -EINVAL;
 		}
 
@@ -4000,7 +4000,7 @@ static int smb_parse_dt(struct smb135x_chg *chip)
 			chip->gamma_setting_num *
 				sizeof(chip->gamma_setting_num), GFP_KERNEL);
 		if (!chip->gamma_setting) {
-			pr_err("gamma setting kzalloc failed!\n");
+			pr_debug("gamma setting kzalloc failed!\n");
 			return -ENOMEM;
 		}
 
@@ -4008,7 +4008,7 @@ static int smb_parse_dt(struct smb135x_chg *chip)
 					"qcom,gamma-setting",
 				chip->gamma_setting, chip->gamma_setting_num);
 		if (rc) {
-			pr_err("Couldn't read gamma setting, rc = %d\n", rc);
+			pr_debug("Couldn't read gamma setting, rc = %d\n", rc);
 			return rc;
 		}
 	}
@@ -4020,7 +4020,7 @@ static int smb_parse_dt(struct smb135x_chg *chip)
 			GFP_KERNEL);
 
 		if (chip->thermal_mitigation == NULL) {
-			pr_err("thermal mitigation kzalloc() failed.\n");
+			pr_debug("thermal mitigation kzalloc() failed.\n");
 			return -ENOMEM;
 		}
 
@@ -4029,7 +4029,7 @@ static int smb_parse_dt(struct smb135x_chg *chip)
 				"qcom,thermal-mitigation",
 				chip->thermal_mitigation, chip->thermal_levels);
 		if (rc) {
-			pr_err("Couldn't read threm limits rc = %d\n", rc);
+			pr_debug("Couldn't read threm limits rc = %d\n", rc);
 			return rc;
 		}
 	}
@@ -4206,7 +4206,7 @@ static int smb135x_main_charger_probe(struct i2c_client *client,
 	/* probe the device to check if its actually connected */
 	rc = smb135x_read(chip, CFG_4_REG, &reg);
 	if (rc) {
-		pr_err("Failed to detect SMB135x, device may be absent\n");
+		pr_debug("Failed to detect SMB135x, device may be absent\n");
 		return -ENODEV;
 	}
 
@@ -4432,13 +4432,13 @@ static int smb135x_chg_remove(struct i2c_client *client)
 	if (chip->therm_bias_vreg) {
 		rc = regulator_disable(chip->therm_bias_vreg);
 		if (rc)
-			pr_err("Couldn't disable therm-bias rc = %d\n", rc);
+			pr_debug("Couldn't disable therm-bias rc = %d\n", rc);
 	}
 
 	if (chip->usb_pullup_vreg) {
 		rc = regulator_disable(chip->usb_pullup_vreg);
 		if (rc)
-			pr_err("Couldn't disable data-pullup rc = %d\n", rc);
+			pr_debug("Couldn't disable data-pullup rc = %d\n", rc);
 	}
 
 	smb135x_regulator_deinit(chip);
@@ -4500,7 +4500,7 @@ static int smb135x_suspend_noirq(struct device *dev)
 		return 0;
 
 	if (chip->irq_waiting) {
-		pr_err_ratelimited("Aborting suspend, an interrupt was detected while suspending\n");
+		pr_debug_ratelimited("Aborting suspend, an interrupt was detected while suspending\n");
 		return -EBUSY;
 	}
 	return 0;

@@ -132,9 +132,9 @@ static void print_error_description(struct kasan_access_info *info)
 {
 	const char *bug_type = get_bug_type(info);
 
-	pr_err("BUG: KASAN: %s in %pS\n",
+	pr_debug("BUG: KASAN: %s in %pS\n",
 		bug_type, (void *)info->ip);
-	pr_err("%s of size %zu at addr %p by task %s/%d\n",
+	pr_debug("%s of size %zu at addr %p by task %s/%d\n",
 		info->is_write ? "Write" : "Read", info->access_size,
 		info->access_addr, current->comm, task_pid_nr(current));
 }
@@ -164,12 +164,12 @@ static void kasan_start_report(unsigned long *flags)
 	 */
 	kasan_disable_current();
 	spin_lock_irqsave(&report_lock, *flags);
-	pr_err("==================================================================\n");
+	pr_debug("==================================================================\n");
 }
 
 static void kasan_end_report(unsigned long *flags)
 {
-	pr_err("==================================================================\n");
+	pr_debug("==================================================================\n");
 	add_taint(TAINT_BAD_PAGE, LOCKDEP_NOW_UNRELIABLE);
 	spin_unlock_irqrestore(&report_lock, *flags);
 	if (panic_on_warn)
@@ -179,14 +179,14 @@ static void kasan_end_report(unsigned long *flags)
 
 static void print_track(struct kasan_track *track, const char *prefix)
 {
-	pr_err("%s by task %u:\n", prefix, track->pid);
+	pr_debug("%s by task %u:\n", prefix, track->pid);
 	if (track->stack) {
 		struct stack_trace trace;
 
 		depot_fetch_stack(track->stack, &trace);
 		print_stack_trace(&trace, 0);
 	} else {
-		pr_err("(stack is not available)\n");
+		pr_debug("(stack is not available)\n");
 	}
 }
 
@@ -206,7 +206,7 @@ static void describe_object_addr(struct kmem_cache *cache, void *object,
 	const char *rel_type;
 	int rel_bytes;
 
-	pr_err("The buggy address belongs to the object at %p\n"
+	pr_debug("The buggy address belongs to the object at %p\n"
 	       " which belongs to the cache %s of size %d\n",
 		object, cache->name, cache->object_size);
 
@@ -224,7 +224,7 @@ static void describe_object_addr(struct kmem_cache *cache, void *object,
 		rel_bytes = access_addr - object_addr;
 	}
 
-	pr_err("The buggy address is located %d bytes %s of\n"
+	pr_debug("The buggy address is located %d bytes %s of\n"
 	       " %d-byte region [%p, %p)\n",
 		rel_bytes, rel_type, cache->object_size, (void *)object_addr,
 		(void *)(object_addr + cache->object_size));
@@ -237,9 +237,9 @@ static void describe_object(struct kmem_cache *cache, void *object,
 
 	if (cache->flags & SLAB_KASAN) {
 		print_track(&alloc_info->alloc_track, "Allocated");
-		pr_err("\n");
+		pr_debug("\n");
 		print_track(&alloc_info->free_track, "Freed");
-		pr_err("\n");
+		pr_debug("\n");
 	}
 
 	describe_object_addr(cache, object, addr);
@@ -250,7 +250,7 @@ static void print_address_description(void *addr)
 	struct page *page = addr_to_page(addr);
 
 	dump_stack();
-	pr_err("\n");
+	pr_debug("\n");
 
 	if (page && PageSlab(page)) {
 		struct kmem_cache *cache = page->slab_cache;
@@ -260,12 +260,12 @@ static void print_address_description(void *addr)
 	}
 
 	if (kernel_or_module_addr(addr) && !init_task_stack_addr(addr)) {
-		pr_err("The buggy address belongs to the variable:\n");
-		pr_err(" %pS\n", addr);
+		pr_debug("The buggy address belongs to the variable:\n");
+		pr_debug(" %pS\n", addr);
 	}
 
 	if (page) {
-		pr_err("The buggy address belongs to the page:\n");
+		pr_debug("The buggy address belongs to the page:\n");
 		dump_page(page, "kasan: bad access detected");
 	}
 }
@@ -294,7 +294,7 @@ static void print_shadow_for_address(const void *addr)
 					SHADOW_BYTES_PER_ROW)
 		- SHADOW_ROWS_AROUND_ADDR * SHADOW_BYTES_PER_ROW;
 
-	pr_err("Memory state around the buggy address:\n");
+	pr_debug("Memory state around the buggy address:\n");
 
 	for (i = -SHADOW_ROWS_AROUND_ADDR; i <= SHADOW_ROWS_AROUND_ADDR; i++) {
 		const void *kaddr = kasan_shadow_to_mem(shadow_row);
@@ -314,7 +314,7 @@ static void print_shadow_for_address(const void *addr)
 			shadow_buf, SHADOW_BYTES_PER_ROW, 0);
 
 		if (row_is_guilty(shadow_row, shadow))
-			pr_err("%*c\n",
+			pr_debug("%*c\n",
 				shadow_pointer_offset(shadow_row, shadow),
 				'^');
 
@@ -328,10 +328,10 @@ void kasan_report_double_free(struct kmem_cache *cache, void *object,
 	unsigned long flags;
 
 	kasan_start_report(&flags);
-	pr_err("BUG: KASAN: double-free or invalid-free in %pS\n", ip);
-	pr_err("\n");
+	pr_debug("BUG: KASAN: double-free or invalid-free in %pS\n", ip);
+	pr_debug("\n");
 	print_address_description(object);
-	pr_err("\n");
+	pr_debug("\n");
 	print_shadow_for_address(object);
 	kasan_end_report(&flags);
 }
@@ -343,13 +343,13 @@ static void kasan_report_error(struct kasan_access_info *info)
 	kasan_start_report(&flags);
 
 	print_error_description(info);
-	pr_err("\n");
+	pr_debug("\n");
 
 	if (!addr_has_shadow(info)) {
 		dump_stack();
 	} else {
 		print_address_description((void *)info->access_addr);
-		pr_err("\n");
+		pr_debug("\n");
 		print_shadow_for_address(info->first_bad_addr);
 	}
 

@@ -290,7 +290,7 @@ int __swap_writepage(struct page *page, struct writeback_control *wbc,
 			 */
 			set_page_dirty(page);
 			ClearPageReclaim(page);
-			pr_err_ratelimited("Write error on dio swapfile (%Lu)\n",
+			pr_debug_ratelimited("Write error on dio swapfile (%Lu)\n",
 				page_file_offset(page));
 		}
 		end_page_writeback(page);
