@@ -1753,7 +1753,7 @@ static long wb_writeback(struct bdi_writeback *wb,
 		 * safe.
 		 */
 		if (work->for_kupdate) {
-			oldest_jif = jiffies - (500 * HZ);
+			oldest_jif = jiffies;
 		} else if (work->for_background)
 			oldest_jif = jiffies;
 
