@@ -3953,6 +3953,42 @@ void asus_chg_flow_work(struct work_struct *work)
 	}
 }
 
+
+// Getting charger ID Here
+extern int32_t get_ID_vadc_voltage(void);
+static void CHG_TYPE_judge(struct smb_charger *chg)
+{
+	int adc_result;
+	int ret;
+	int MIN_750K, MAX_750K, MIN_200K, MAX_200K;
+
+	MIN_750K = TITAN_750K_MIN;
+	MAX_750K = TITAN_750K_MAX;
+	MIN_200K = TITAN_200K_MIN;
+	MAX_200K = TITAN_200K_MAX;
+
+	/* read charger ID via pm660 gpio3 */
+	adc_result = get_ID_vadc_voltage();
+
+        if(flag_repeat == 0)
+   {
+	/* vdm1 < 0.3v */
+	if (adc_result <= VADC_THD_300MV) {
+		ret = gpio_direction_output(global_gpio->ADCPWREN_PMI_GP1, 1);
+		if (ret)
+			pr_err("%s: failed to pull-high ADCPWREN_PMI_GP1-gpios34\n",
+				__func__);
+		else
+			pr_debug("%s: Pull high ADC_VH_EN\n", __func__);
+
+		msleep(500);
+                
+        if(flag_repeat == 0)
+		/* vdm2 > 1v */
+		adc_result = get_ID_vadc_voltage();
+		if (adc_result >= VADC_THD_1000MV) { //For Others only
+}
+
 void asus_adapter_adc_work(struct work_struct *work)
 {
 	int rc;
