@@ -36,7 +36,6 @@
 #define PARALLEL_PSY_VOTER		"PARALLEL_PSY_VOTER"
 #define PL_HW_ABSENT_VOTER		"PL_HW_ABSENT_VOTER"
 #define PL_VOTER			"PL_VOTER"
-#define RESTRICT_CHG_VOTER		"RESTRICT_CHG_VOTER"
 #define ICL_CHANGE_VOTER		"ICL_CHANGE_VOTER"
 #define PL_INDIRECT_VOTER		"PL_INDIRECT_VOTER"
 #define USBIN_I_VOTER			"USBIN_I_VOTER"
@@ -96,8 +95,6 @@ module_param_named(debug_mask, debug_mask, int, S_IRUSR | S_IWUSR);
 enum {
 	VER = 0,
 	SLAVE_PCT,
-	RESTRICT_CHG_ENABLE,
-	RESTRICT_CHG_CURRENT,
 };
 
 /*******
@@ -244,82 +241,10 @@ static ssize_t slave_pct_store(struct class *c, struct class_attribute *attr,
 	return count;
 }
 
-/**********************
-* RESTICTED CHARGIGNG *
-***********************/
-static ssize_t restrict_chg_show(struct class *c, struct class_attribute *attr,
-			char *ubuf)
-{
-	struct pl_data *chip = container_of(c, struct pl_data,
-			qcom_batt_class);
-
-	return snprintf(ubuf, PAGE_SIZE, "%d\n",
-			chip->restricted_charging_enabled);
-}
-
-static ssize_t restrict_chg_store(struct class *c, struct class_attribute *attr,
-			const char *ubuf, size_t count)
-{
-	struct pl_data *chip = container_of(c, struct pl_data,
-			qcom_batt_class);
-	unsigned long val;
-
-	if (kstrtoul(ubuf, 10, &val))
-		return -EINVAL;
-
-	if (chip->restricted_charging_enabled == !!val)
-		goto no_change;
-
-	chip->restricted_charging_enabled = !!val;
-
-	/* disable parallel charger in case of restricted charging */
-	vote(chip->pl_disable_votable, RESTRICT_CHG_VOTER,
-				chip->restricted_charging_enabled, 0);
-
-	vote(chip->fcc_votable, RESTRICT_CHG_VOTER,
-				chip->restricted_charging_enabled,
-				chip->restricted_current);
-
-no_change:
-	return count;
-}
-
-static ssize_t restrict_cur_show(struct class *c, struct class_attribute *attr,
-			char *ubuf)
-{
-	struct pl_data *chip = container_of(c, struct pl_data,
-			qcom_batt_class);
-
-	return snprintf(ubuf, PAGE_SIZE, "%d\n", chip->restricted_current);
-}
-
-static ssize_t restrict_cur_store(struct class *c, struct class_attribute *attr,
-			const char *ubuf, size_t count)
-{
-	struct pl_data *chip = container_of(c, struct pl_data,
-			qcom_batt_class);
-	unsigned long val;
-
-	if (kstrtoul(ubuf, 10, &val))
-		return -EINVAL;
-
-	chip->restricted_current = val;
-
-	vote(chip->fcc_votable, RESTRICT_CHG_VOTER,
-				chip->restricted_charging_enabled,
-				chip->restricted_current);
-
-	return count;
-}
-
 static struct class_attribute pl_attributes[] = {
 	[VER]			= __ATTR_RO(version),
 	[SLAVE_PCT]		= __ATTR(parallel_pct, S_IRUGO | S_IWUSR,
 					slave_pct_show, slave_pct_store),
-	[RESTRICT_CHG_ENABLE]	= __ATTR(restricted_charging, S_IRUGO | S_IWUSR,
-					restrict_chg_show, restrict_chg_store),
-	[RESTRICT_CHG_CURRENT]	= __ATTR(restricted_current, S_IRUGO | S_IWUSR,
-					restrict_cur_show, restrict_cur_store),
 	__ATTR_NULL,
 };
 
@@ -385,10 +310,10 @@ done:
  *  FCC  *
 **********/
 #define EFFICIENCY_PCT	80
-#define FCC_STEP_SIZE_UA 100000
+#define FCC_STEP_SIZE_UA 150000
 #define FCC_STEP_UPDATE_DELAY_MS 1000
 #define STEP_UP 1
-#define STEP_DOWN -1
+#define STEP_DOWN -0
 static void get_fcc_split(struct pl_data *chip, int total_ua,
 			int *master_ua, int *slave_ua)
 {
