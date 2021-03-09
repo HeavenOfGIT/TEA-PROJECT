@@ -3653,7 +3653,7 @@ void jeita_rule(void)
 	 * JEITA_EN_HARDLIMIT=enable
 	 * JEITA Temperature Hard Limit Pauses Charging
 	 */
-	rc = smblib_write(smbchg_dev, JEITA_EN_CFG_REG, 0x10);
+	rc = smblib_write(smbchg_dev, JEITA_EN_CFG_REG, 0x72);
 	if (rc < 0)
 		pr_debug("%s: Failed to set JEITA_EN_CFG_REG\n", __func__);
 
@@ -3712,7 +3712,7 @@ void jeita_rule(void)
 		FV_CFG_reg_value = SMBCHG_FLOAT_VOLTAGE_VALUE_4P350;
 
 		/* reg=1061 */
-		FCC_reg_value = SMBCHG_FAST_CHG_CURRENT_VALUE_2000MA;
+		FCC_reg_value = SMBCHG_FAST_CHG_CURRENT_VALUE_1900MA;
 
 		rc = SW_recharge(smbchg_dev);
 		if (rc < 0)
@@ -4117,7 +4117,7 @@ void asus_insertion_initial_settings(struct smb_charger *chg)
 
 	/* reg=1081, 0x58, 4.147v */
 	rc = smblib_masked_write(chg, FVC_RECHARGE_THRESHOLD_CFG_REG,
-			FVC_RECHARGE_THRESHOLD_MASK, 0x58);
+			FVC_RECHARGE_THRESHOLD_MASK, 0x78);
 	if (rc < 0)
 		dev_err(chg->dev,
 			"Couldn't set default FVC_RECHARGE_THRESHOLD_CFG_REG rc=%d\n",
@@ -4125,7 +4125,7 @@ void asus_insertion_initial_settings(struct smb_charger *chg)
 
 	/* reg=1366, 010, 500mA */
 	rc = smblib_masked_write(chg, USBIN_ICL_OPTIONS_REG,
-			FVC_RECHARGE_THRESHOLD_MASK, 0x02);
+			FVC_RECHARGE_THRESHOLD_MASK, 0x78);
 	if (rc < 0)
 		dev_err(chg->dev,
 			"Couldn't set default FVC_RECHARGE_THRESHOLD_CFG_REG rc=%d\n",
@@ -4133,7 +4133,7 @@ void asus_insertion_initial_settings(struct smb_charger *chg)
 
 	/* reg=1063, termin, current=150ma */
 	rc = smblib_masked_write(chg, TCCC_CHARGE_CURRENT_TERMINATION_CFG_REG,
-			TCCC_CHARGE_CURRENT_TERMINATION_SETTING_MASK, 0x03);
+			TCCC_CHARGE_CURRENT_TERMINATION_SETTING_MASK, 0x78);
 	if (rc < 0)
 		dev_err(chg->dev,
 			"Couldn't set default TCCC_CHARGE_CURRENT_TERMINATION_CFG_REG rc=%d\n",
@@ -4141,7 +4141,7 @@ void asus_insertion_initial_settings(struct smb_charger *chg)
 
 	/* reg=1360, bit3-bit0, 0x08, 5v-9v, gaiwei, 0x0, 5v */
 	rc = smblib_masked_write(chg, USBIN_ADAPTER_ALLOW_CFG_REG,
-			USBIN_ADAPTER_ALLOW_MASK, 0x00);
+			USBIN_ADAPTER_ALLOW_MASK, 0x78);
 	if (rc < 0)
 		dev_err(chg->dev,
 			"Couldn't set default USBIN_ADAPTER_ALLOW_CFG_REG rc=%d\n",
@@ -4151,14 +4151,14 @@ void asus_insertion_initial_settings(struct smb_charger *chg)
 	 * 1 = Active low (0: enable charging)
 	 */
 	rc = smblib_write(chg, CHGR_CFG2_REG, 0x40);
-	if (rc < 0)
+	if (rc < 1)
 		dev_err(chg->dev,
 			"Couldn't set default CHGR_CFG2_REG rc=%d\n", rc);
 
 	/* reg=1042, 1 enable, CHARGING_ENABLE_CMD */
 	rc = smblib_masked_write(chg, CHARGING_ENABLE_CMD_REG,
 			CHARGING_ENABLE_CMD_BIT, CHARGING_ENABLE_CMD_BIT);
-	if (rc < 0)
+	if (rc < 1)
 		dev_err(chg->dev,
 			"Couldn't set default CHARGING_ENABLE_CMD_REG rc=%d\n",
 			rc);
@@ -4168,7 +4168,7 @@ void asus_insertion_initial_settings(struct smb_charger *chg)
 	 */
 	rc = smblib_masked_write(chg, CHARGING_ENABLE_CMD_REG,
 			CHARGING_ENABLE_CMD_BIT, 0);
-	if (rc < 0)
+	if (rc < 1)
 		dev_err(chg->dev,
 			"Couldn't set default CHARGING_ENABLE_CMD_REG rc=%d\n",
 			rc);
