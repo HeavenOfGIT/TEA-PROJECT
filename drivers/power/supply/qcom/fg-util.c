@@ -1,4 +1,4 @@
-/* Copyright (c) 2016-2017, 2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -79,12 +79,12 @@ int fg_lerp(const struct fg_pt *pts, size_t tablesize, s32 input, s32 *output)
 	s64 temp;
 
 	if (pts == NULL) {
-		pr_debug("Table is NULL\n");
+		pr_err("Table is NULL\n");
 		return -EINVAL;
 	}
 
 	if (tablesize < 1) {
-		pr_debug("Table has no entries\n");
+		pr_err("Table has no entries\n");
 		return -ENOENT;
 	}
 
@@ -94,7 +94,7 @@ int fg_lerp(const struct fg_pt *pts, size_t tablesize, s32 input, s32 *output)
 	}
 
 	if (pts[0].x > pts[1].x) {
-		pr_debug("Table is not in acending order\n");
+		pr_err("Table is not in acending order\n");
 		return -EINVAL;
 	}
 
@@ -314,7 +314,7 @@ int fg_sram_write(struct fg_chip *chip, u16 address, u8 offset,
 		}
 
 		if (rc < 0) {
-			pr_debug("wait for soc_update timed out rc=%d\n", rc);
+			pr_err("wait for soc_update timed out rc=%d\n", rc);
 			goto out;
 		}
 	}
@@ -322,7 +322,7 @@ int fg_sram_write(struct fg_chip *chip, u16 address, u8 offset,
 	rc = fg_interleaved_mem_write(chip, address, offset, val, len,
 			atomic_access);
 	if (rc < 0)
-		pr_debug("Error in writing SRAM address 0x%x[%d], rc=%d\n",
+		pr_err("Error in writing SRAM address 0x%x[%d], rc=%d\n",
 			address, offset, rc);
 out:
 	if (atomic_access)
@@ -354,7 +354,7 @@ int fg_sram_read(struct fg_chip *chip, u16 address, u8 offset,
 
 	rc = fg_interleaved_mem_read(chip, address, offset, val, len);
 	if (rc < 0)
-		pr_debug("Error in reading SRAM address 0x%x[%d], rc=%d\n",
+		pr_err("Error in reading SRAM address 0x%x[%d], rc=%d\n",
 			address, offset, rc);
 
 	mutex_unlock(&chip->sram_rw_lock);
@@ -371,7 +371,7 @@ int fg_sram_masked_write(struct fg_chip *chip, u16 address, u8 offset,
 
 	rc = fg_sram_read(chip, address, 0, buf, 4, flags);
 	if (rc < 0) {
-		pr_debug("sram read failed: address=%03X, rc=%d\n", address, rc);
+		pr_err("sram read failed: address=%03X, rc=%d\n", address, rc);
 		return rc;
 	}
 
@@ -380,7 +380,7 @@ int fg_sram_masked_write(struct fg_chip *chip, u16 address, u8 offset,
 
 	rc = fg_sram_write(chip, address, 0, buf, 4, flags);
 	if (rc < 0) {
-		pr_debug("sram write failed: address=%03X, rc=%d\n", address, rc);
+		pr_err("sram write failed: address=%03X, rc=%d\n", address, rc);
 		return rc;
 	}
 
@@ -420,7 +420,7 @@ int fg_write(struct fg_chip *chip, int addr, u8 *val, int len)
 		return -ENXIO;
 
 	mutex_lock(&chip->bus_lock);
-	sec_access = (addr & 0x00FF) >= 0xBA;
+	sec_access = (addr & 0x00FF) > 0xD0;
 	if (sec_access) {
 		rc = regmap_write(chip->regmap, (addr & 0xFF00) | 0xD0, 0xA5);
 		if (rc < 0) {
@@ -460,7 +460,7 @@ int fg_masked_write(struct fg_chip *chip, int addr, u8 mask, u8 val)
 		return -ENXIO;
 
 	mutex_lock(&chip->bus_lock);
-	sec_access = (addr & 0x00FF) >= 0xBA;
+	sec_access = (addr & 0x00FF) > 0xD0;
 	if (sec_access) {
 		rc = regmap_write(chip->regmap, (addr & 0xFF00) | 0xD0, 0xA5);
 		if (rc < 0) {
@@ -519,7 +519,7 @@ static int fg_sram_dfs_open(struct inode *inode, struct file *file)
 	size_t databufsize = SZ_4K;
 
 	if (!dbgfs_data.chip) {
-		pr_debug("Not initialized data\n");
+		pr_err("Not initialized data\n");
 		return -EINVAL;
 	}
 
@@ -664,7 +664,7 @@ static int get_log_data(struct fg_trans *trans)
 		return 0;
 
 	if (item_cnt > SZ_4K) {
-		pr_debug("Reading too many bytes\n");
+		pr_err("Reading too many bytes\n");
 		return -EINVAL;
 	}
 
@@ -673,7 +673,7 @@ static int get_log_data(struct fg_trans *trans)
 	rc = fg_sram_read(trans->chip, trans->addr, 0,
 			trans->data, trans->cnt, 0);
 	if (rc < 0) {
-		pr_debug("SRAM read failed: rc = %d\n", rc);
+		pr_err("SRAM read failed: rc = %d\n", rc);
 		return rc;
 	}
 	/* Reset the log buffer 'pointers' */
@@ -725,7 +725,7 @@ static ssize_t fg_sram_dfs_reg_read(struct file *file, char __user *buf,
 
 	ret = copy_to_user(buf, &log->data[log->rpos], len);
 	if (ret == len) {
-		pr_debug("error copy sram register values to user\n");
+		pr_err("error copy sram register values to user\n");
 		len = -EFAULT;
 		goto unlock_mutex;
 	}
@@ -772,7 +772,7 @@ static ssize_t fg_sram_dfs_reg_write(struct file *file, const char __user *buf,
 
 	ret = copy_from_user(kbuf, buf, count);
 	if (ret == count) {
-		pr_debug("failed to copy data from user\n");
+		pr_err("failed to copy data from user\n");
 		ret = -EFAULT;
 		goto free_buf;
 	}
@@ -810,7 +810,7 @@ static ssize_t fg_sram_dfs_reg_write(struct file *file, const char __user *buf,
 
 	ret = fg_sram_write(trans->chip, address, 0, values, cnt, 0);
 	if (ret) {
-		pr_debug("SRAM write failed, err = %zu\n", ret);
+		pr_err("SRAM write failed, err = %zu\n", ret);
 	} else {
 		ret = count;
 		trans->offset += cnt > 4 ? 4 : cnt;
@@ -843,7 +843,7 @@ static int fg_sram_debugfs_create(struct fg_chip *chip)
 	pr_debug("Creating FG_SRAM debugfs file-system\n");
 	dfs_sram = debugfs_create_dir("sram", chip->dfs_root);
 	if (!dfs_sram) {
-		pr_debug("error creating fg sram dfs rc=%ld\n",
+		pr_err("error creating fg sram dfs rc=%ld\n",
 		       (long)dfs_sram);
 		return -ENOMEM;
 	}
@@ -852,7 +852,7 @@ static int fg_sram_debugfs_create(struct fg_chip *chip)
 	file = debugfs_create_blob("help", S_IRUGO, dfs_sram,
 					&dbgfs_data.help_msg);
 	if (!file) {
-		pr_debug("error creating help entry\n");
+		pr_err("error creating help entry\n");
 		goto err_remove_fs;
 	}
 
@@ -861,21 +861,21 @@ static int fg_sram_debugfs_create(struct fg_chip *chip)
 	file = debugfs_create_u32("count", dfs_mode, dfs_sram,
 					&(dbgfs_data.cnt));
 	if (!file) {
-		pr_debug("error creating 'count' entry\n");
+		pr_err("error creating 'count' entry\n");
 		goto err_remove_fs;
 	}
 
 	file = debugfs_create_x32("address", dfs_mode, dfs_sram,
 					&(dbgfs_data.addr));
 	if (!file) {
-		pr_debug("error creating 'address' entry\n");
+		pr_err("error creating 'address' entry\n");
 		goto err_remove_fs;
 	}
 
 	file = debugfs_create_file("data", dfs_mode, dfs_sram, &dbgfs_data,
 					&fg_sram_dfs_reg_fops);
 	if (!file) {
-		pr_debug("error creating 'data' entry\n");
+		pr_err("error creating 'data' entry\n");
 		goto err_remove_fs;
 	}
 
@@ -904,7 +904,7 @@ static ssize_t fg_alg_flags_read(struct file *file, char __user *userbuf,
 			  chip->sp[FG_SRAM_ALG_FLAGS].addr_byte, &alg_flags, 1,
 			  FG_IMA_DEFAULT);
 	if (rc < 0) {
-		pr_debug("failed to read algorithm flags rc=%d\n", rc);
+		pr_err("failed to read algorithm flags rc=%d\n", rc);
 		return -EFAULT;
 	}
 
@@ -936,22 +936,22 @@ int fg_debugfs_create(struct fg_chip *chip)
 	chip->dfs_root = debugfs_create_dir("fg", NULL);
 	if (IS_ERR_OR_NULL(chip->dfs_root)) {
 		if (PTR_ERR(chip->dfs_root) == -ENODEV)
-			pr_debug("debugfs is not enabled in the kernel\n");
+			pr_err("debugfs is not enabled in the kernel\n");
 		else
-			pr_debug("error creating fg dfs root rc=%ld\n",
+			pr_err("error creating fg dfs root rc=%ld\n",
 			       (long)chip->dfs_root);
 		return -ENODEV;
 	}
 
 	rc = fg_sram_debugfs_create(chip);
 	if (rc < 0) {
-		pr_debug("failed to create sram dfs rc=%d\n", rc);
+		pr_err("failed to create sram dfs rc=%d\n", rc);
 		goto err_remove_fs;
 	}
 
 	if (!debugfs_create_file("alg_flags", S_IRUSR, chip->dfs_root, chip,
 				 &fg_alg_flags_fops)) {
-		pr_debug("failed to create alg_flags file\n");
+		pr_err("failed to create alg_flags file\n");
 		goto err_remove_fs;
 	}
 

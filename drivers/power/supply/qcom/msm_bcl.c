@@ -1,4 +1,4 @@
-/* Copyright (c) 2014, 2017, 2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014, 2017, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -48,7 +48,7 @@ static ssize_t high_trip_show(struct kobject *kobj, struct kobj_attribute *attr,
 
 	ret = dev_param->ops->get_high_trip(&val);
 	if (ret) {
-		pr_debug("High trip value read failed. err:%d\n", ret);
+		pr_err("High trip value read failed. err:%d\n", ret);
 		return ret;
 	}
 
@@ -67,7 +67,7 @@ static ssize_t low_trip_show(struct kobject *kobj, struct kobj_attribute *attr,
 
 	ret = dev_param->ops->get_low_trip(&val);
 	if (ret) {
-		pr_debug("Low trip value read failed. err:%d\n", ret);
+		pr_err("Low trip value read failed. err:%d\n", ret);
 		return ret;
 	}
 
@@ -86,7 +86,7 @@ static ssize_t value_show(struct kobject *kobj, struct kobj_attribute *attr,
 
 	ret = dev_param->ops->read(&val);
 	if (ret) {
-		pr_debug("Value read failed. err:%d\n", ret);
+		pr_err("Value read failed. err:%d\n", ret);
 		return ret;
 	}
 	dev_param->last_read_val = val;
@@ -101,14 +101,14 @@ int msm_bcl_set_threshold(enum bcl_param param_type,
 
 	if (param_type >= BCL_PARAM_MAX || !bcl[param_type]
 		|| !bcl[param_type]->registered) {
-		pr_debug("BCL not initialized\n");
+		pr_err("BCL not initialized\n");
 		return -EINVAL;
 	}
 	if ((!inp_thresh)
 		|| (inp_thresh->trip_value < 0)
 		|| (!inp_thresh->trip_notify)
 		|| (trip_type >= BCL_TRIP_MAX)) {
-		pr_debug("Invalid Input\n");
+		pr_err("Invalid Input\n");
 		return -EINVAL;
 	}
 
@@ -123,7 +123,7 @@ int msm_bcl_set_threshold(enum bcl_param param_type,
 			inp_thresh->trip_value);
 	}
 	if (ret) {
-		pr_debug("Error setting trip%d for param%d. err:%d\n", trip_type,
+		pr_err("Error setting trip%d for param%d. err:%d\n", trip_type,
 				 param_type, ret);
 		return ret;
 	}
@@ -136,7 +136,7 @@ static int bcl_thresh_notify(struct bcl_param_data *param_data, int val,
 {
 	if (!param_data || trip_type >= BCL_TRIP_MAX
 		|| !param_data->registered) {
-		pr_debug("Invalid input\n");
+		pr_err("Invalid input\n");
 		return -EINVAL;
 	}
 
@@ -158,17 +158,17 @@ struct bcl_param_data *msm_bcl_register_param(enum bcl_param param_type,
 		|| !param_ops->get_high_trip || !param_ops->set_low_trip
 		|| !param_ops->get_low_trip || !param_ops->enable
 		|| !param_ops->disable) {
-		pr_debug("Invalid input\n");
+		pr_err("Invalid input\n");
 		return NULL;
 	}
 	if (bcl[param_type]->registered) {
-		pr_debug("param%d already initialized\n", param_type);
+		pr_err("param%d already initialized\n", param_type);
 		return NULL;
 	}
 
 	ret = bcl_add_sysfs_nodes(param_type);
 	if (ret) {
-		pr_debug("Error creating sysfs nodes. err:%d\n", ret);
+		pr_err("Error creating sysfs nodes. err:%d\n", ret);
 		return NULL;
 	}
 	bcl[param_type]->ops = param_ops;
@@ -184,7 +184,7 @@ int msm_bcl_unregister_param(struct bcl_param_data *param_data)
 	int i = 0, ret = -EINVAL;
 
 	if (!bcl[i] || !param_data) {
-		pr_debug("Invalid input\n");
+		pr_err("Invalid input\n");
 		return ret;
 	}
 	for (; i < BCL_PARAM_MAX; i++) {
@@ -204,7 +204,7 @@ int msm_bcl_disable(void)
 	int ret = 0, i = 0;
 
 	if (!bcl[i]) {
-		pr_debug("BCL not initialized\n");
+		pr_err("BCL not initialized\n");
 		return -EINVAL;
 	}
 
@@ -213,7 +213,7 @@ int msm_bcl_disable(void)
 			continue;
 		ret = bcl[i]->ops->disable();
 		if (ret) {
-			pr_debug("Error in disabling interrupt. param:%d err%d\n",
+			pr_err("Error in disabling interrupt. param:%d err%d\n",
 				i, ret);
 			return ret;
 		}
@@ -227,9 +227,8 @@ int msm_bcl_enable(void)
 /*	int ret = 0, i = 0;
 	struct bcl_param_data *param_data = NULL;
 
-	if (!bcl[i] || (bcl[BCL_PARAM_VOLTAGE]->thresh == NULL)
-		|| (bcl[BCL_PARAM_CURRENT]->thresh == NULL)) {
-		pr_debug("BCL not initialized\n");
+	if (!bcl[i]) {
+		pr_err("BCL not initialized\n");
 		return -EINVAL;
 	}
 
@@ -239,19 +238,19 @@ int msm_bcl_enable(void)
 		param_data = bcl[i];
 		ret = param_data->ops->set_high_trip(param_data->high_trip);
 		if (ret) {
-			pr_debug("Error setting high trip. param:%d. err:%d",
+			pr_err("Error setting high trip. param:%d. err:%d",
 				i, ret);
 			return ret;
 		}
 		ret = param_data->ops->set_low_trip(param_data->low_trip);
 		if (ret) {
-			pr_debug("Error setting low trip. param:%d. err:%d",
+			pr_err("Error setting low trip. param:%d. err:%d",
 				i, ret);
 			return ret;
 		}
 		ret = param_data->ops->enable();
 		if (ret) {
-			pr_debug("Error enabling interrupt. param:%d. err:%d",
+			pr_err("Error enabling interrupt. param:%d. err:%d",
 				i, ret);
 			return ret;
 		}
@@ -266,17 +265,17 @@ int msm_bcl_read(enum bcl_param param_type, int *value)
 	int ret = 0;
 
 	if (!value || param_type >= BCL_PARAM_MAX) {
-		pr_debug("Invalid input\n");
+		pr_err("Invalid input\n");
 		return -EINVAL;
 	}
 	if (!bcl[param_type] || !bcl[param_type]->registered) {
-		pr_debug("BCL driver not initialized\n");
+		pr_err("BCL driver not initialized\n");
 		return -ENOSYS;
 	}
 
 	ret = bcl[param_type]->ops->read(value);
 	if (ret) {
-		pr_debug("Error reading param%d. err:%d\n", param_type, ret);
+		pr_err("Error reading param%d. err:%d\n", param_type, ret);
 		return ret;
 	}
 	bcl[param_type]->last_read_val = *value;
@@ -297,14 +296,14 @@ static int bcl_add_sysfs_nodes(enum bcl_param param_type)
 	dev_set_name(&bcl[param_type]->device, "%s", param_name[param_type]);
 	ret = device_register(&bcl[param_type]->device);
 	if (ret) {
-		pr_debug("Error registering device %s. err:%d\n",
+		pr_err("Error registering device %s. err:%d\n",
 			param_name[param_type], ret);
 		return ret;
 	}
 	bcl[param_type]->bcl_attr_gp.attrs = kzalloc(sizeof(struct attribute *)
 		* (BCL_PARAM_MAX_ATTR + 1), GFP_KERNEL);
 	if (!bcl[param_type]->bcl_attr_gp.attrs) {
-		pr_debug("Sysfs attribute create failed.\n");
+		pr_err("Sysfs attribute create failed.\n");
 		ret = -ENOMEM;
 		goto add_sysfs_exit;
 	}
@@ -319,7 +318,7 @@ static int bcl_add_sysfs_nodes(enum bcl_param param_type)
 	ret = sysfs_create_group(&bcl[param_type]->device.kobj,
 		&bcl[param_type]->bcl_attr_gp);
 	if (ret) {
-		pr_debug("Failure to create sysfs nodes. err:%d", ret);
+		pr_err("Failure to create sysfs nodes. err:%d", ret);
 		goto add_sysfs_exit;
 	}
 
@@ -335,7 +334,7 @@ static int msm_bcl_init(void)
 		bcl[i] = kzalloc(sizeof(struct bcl_param_data),
 			GFP_KERNEL);
 		if (!bcl[i]) {
-			pr_debug("kzalloc failed\n");
+			pr_err("kzalloc failed\n");
 			while ((--i) >= 0)
 				kfree(bcl[i]);
 			return -ENOMEM;
@@ -352,7 +351,7 @@ static int __init msm_bcl_init_driver(void)
 
 	ret = msm_bcl_init();
 	if (ret) {
-		pr_debug("msm bcl init failed. err:%d\n", ret);
+		pr_err("msm bcl init failed. err:%d\n", ret);
 		return ret;
 	}
 	return class_register(&msm_bcl_class);

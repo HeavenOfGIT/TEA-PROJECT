@@ -28,6 +28,7 @@
 #include <linux/power/qcom/apm.h>
 #include <soc/qcom/scm.h>
 #include <linux/arm-smccc.h>
+#include <linux/psci.h>
 
 /*
  *        VDD_APCC
@@ -818,13 +819,13 @@ struct msm_apm_ctrl_dev *msm_apm_ctrl_dev_get(struct device *dev)
 	struct device_node *ctrl_node;
 
 	if (!dev || !dev->of_node) {
-		pr_debug("Invalid device node\n");
+		pr_err("Invalid device node\n");
 		return ERR_PTR(-EINVAL);
 	}
 
 	ctrl_node = of_parse_phandle(dev->of_node, "qcom,apm-ctrl", 0);
 	if (!ctrl_node) {
-		pr_debug("Could not find qcom,apm-ctrl property in %s\n",
+		pr_err("Could not find qcom,apm-ctrl property in %s\n",
 		       dev->of_node->full_name);
 		return ERR_PTR(-ENXIO);
 	}
@@ -860,7 +861,7 @@ static ssize_t apm_supply_dbg_read(struct file *filep, char __user *ubuf,
 	int len;
 
 	if (!ctrl_dev) {
-		pr_debug("invalid apm ctrl handle\n");
+		pr_err("invalid apm ctrl handle\n");
 		return -ENODEV;
 	}
 
@@ -884,7 +885,7 @@ static void apm_debugfs_base_init(void)
 	apm_debugfs_base = debugfs_create_dir("msm-apm", NULL);
 
 	if (IS_ERR_OR_NULL(apm_debugfs_base))
-		pr_debug("msm-apm debugfs base directory creation failed\n");
+		pr_err("msm-apm debugfs base directory creation failed\n");
 }
 
 static void apm_debugfs_init(struct msm_apm_ctrl_dev *ctrl_dev)
@@ -892,14 +893,14 @@ static void apm_debugfs_init(struct msm_apm_ctrl_dev *ctrl_dev)
 	struct dentry *temp;
 
 	if (IS_ERR_OR_NULL(apm_debugfs_base)) {
-		pr_debug("Base directory missing, cannot create apm debugfs nodes\n");
+		pr_err("Base directory missing, cannot create apm debugfs nodes\n");
 		return;
 	}
 
 	ctrl_dev->debugfs = debugfs_create_dir(dev_name(ctrl_dev->dev),
 					       apm_debugfs_base);
 	if (IS_ERR_OR_NULL(ctrl_dev->debugfs)) {
-		pr_debug("%s debugfs directory creation failed\n",
+		pr_err("%s debugfs directory creation failed\n",
 		       dev_name(ctrl_dev->dev));
 		return;
 	}
@@ -907,7 +908,7 @@ static void apm_debugfs_init(struct msm_apm_ctrl_dev *ctrl_dev)
 	temp = debugfs_create_file("supply", 0444, ctrl_dev->debugfs,
 				   ctrl_dev, &apm_supply_fops);
 	if (IS_ERR_OR_NULL(temp)) {
-		pr_debug("supply mode creation failed\n");
+		pr_err("supply mode creation failed\n");
 		return;
 	}
 }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2016-2017, 2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -301,7 +301,6 @@ struct fg_batt_props {
 	int		float_volt_uv;
 	int		vbatt_full_mv;
 	int		fastchg_curr_ma;
-	int		nom_cap_uah;
 };
 
 struct fg_cyc_ctr_data {
@@ -385,11 +384,6 @@ static const struct fg_pt fg_tsmc_osc_table[] = {
 	{  90,		444992 },
 };
 
-struct fg_saved_data {
-	union power_supply_propval val;
-	unsigned long last_req_expires;
-};
-
 struct fg_chip {
 	struct device		*dev;
 	struct pmic_revid_data	*pmic_rev_id;
@@ -469,7 +463,6 @@ struct fg_chip {
 	struct work_struct	esr_filter_work;
 	struct alarm		esr_filter_alarm;
 	ktime_t			last_delta_temp_time;
-	struct fg_saved_data	saved_data[POWER_SUPPLY_PROP_MAX];
 };
 
 /* Debugfs data structures are below */
@@ -529,5 +522,4 @@ extern void fg_circ_buf_clr(struct fg_circ_buf *);
 extern int fg_circ_buf_avg(struct fg_circ_buf *, int *);
 extern int fg_circ_buf_median(struct fg_circ_buf *, int *);
 extern int fg_lerp(const struct fg_pt *, size_t, s32, s32 *);
-extern int fg_dma_mem_req(struct fg_chip *, bool);
 #endif

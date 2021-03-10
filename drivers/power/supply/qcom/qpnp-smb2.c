@@ -28,15 +28,19 @@
 #include "smb-lib.h"
 #include "storm-watch.h"
 #include <linux/pmic-voter.h>
-#ifdef CONFIG_MACH_ASUS_X00T
 #include <linux/of_gpio.h>
 #include <linux/wakelock.h>
 #include <linux/uaccess.h>
 #include <linux/proc_fs.h>
 #include <asm-generic/errno-base.h>
+#define CHARGER_TAG "[BAT][CHG]"
+#define ERROR_TAG "[ERR]"
+
+#define printk(...)  printk(KERN_ERR CHARGER_TAG __VA_ARGS__)
+#define CHG_DBG(...)  printk(KERN_ERR CHARGER_TAG __VA_ARGS__)
+#define CHG_DBG_E(...)  printk(KERN_ERR CHARGER_TAG ERROR_TAG __VA_ARGS__)
 #include <linux/switch.h>
 #include <linux/qpnp/qpnp-adc.h>
-#endif
 
 #define SMB2_DEFAULT_WPWR_UW	8000000
 
@@ -187,8 +191,6 @@ struct smb2 {
 	struct smb_dt_props	dt;
 	bool			bad_part;
 };
-
-#ifdef CONFIG_MACH_ASUS_X00T
 struct smb_charger *smbchg_dev;
 struct timespec last_jeita_time;
 struct wake_lock asus_chg_lock;
@@ -196,16 +198,17 @@ extern void smblib_asus_monitor_start(struct smb_charger *chg, int time);
 extern bool asus_get_prop_usb_present(struct smb_charger *chg);
 extern void asus_smblib_stay_awake(struct smb_charger *chg);
 extern void asus_smblib_relax(struct smb_charger *chg);
-/* global gpio_control */
-struct gpio_control *global_gpio;
-#endif
-
+struct gpio_control *global_gpio;	//global gpio_control
+#ifdef HQ_BUILD_FACTORY
+static int __debug_mask = 0x10;
+#else
 static int __debug_mask;
+#endif
 module_param_named(
 	debug_mask, __debug_mask, int, S_IRUSR | S_IWUSR
 );
 
-static int __weak_chg_icl_ua = 1500000;
+static int __weak_chg_icl_ua = 500000;
 module_param_named(
 	weak_chg_icl_ua, __weak_chg_icl_ua, int, S_IRUSR | S_IWUSR);
 
@@ -227,9 +230,8 @@ static int smb2_parse_dt(struct smb2 *chip)
 	struct smb_charger *chg = &chip->chg;
 	struct device_node *node = chg->dev->of_node;
 	int rc, byte_len;
-
 	if (!node) {
-		pr_debug("device tree node missing\n");
+		pr_err("device tree node missing\n");
 		return -EINVAL;
 	}
 
@@ -313,15 +315,16 @@ static int smb2_parse_dt(struct smb2 *chip)
 			return rc;
 		}
 	}
+	/* USB alert start */
+	if(of_find_property(node,"qcom,chg-alert-vadc",NULL)){
+		dev_err(chg->dev,"get chg_alert vadc good rc = %d \n",rc);
+	}
+	/* USB alert end */
 
-#ifdef CONFIG_MACH_ASUS_X00T
-	if (of_find_property(node, "qcom,chg-alert-vadc", NULL))
-		dev_err(chg->dev, "get chg_alert vadc good rc = %d\n", rc);
-#endif
 
 	of_property_read_u32(node, "qcom,float-option", &chip->dt.float_option);
 	if (chip->dt.float_option < 0 || chip->dt.float_option > 4) {
-		pr_debug("qcom,float-option is out of range [0, 4]\n");
+		pr_err("qcom,float-option is out of range [0, 4]\n");
 		return -EINVAL;
 	}
 
@@ -332,7 +335,7 @@ static int smb2_parse_dt(struct smb2 *chip)
 				&chip->dt.chg_inhibit_thr_mv);
 	if ((chip->dt.chg_inhibit_thr_mv < 0 ||
 		chip->dt.chg_inhibit_thr_mv > 300)) {
-		pr_debug("qcom,chg-inhibit-threshold-mv is incorrect\n");
+		pr_err("qcom,chg-inhibit-threshold-mv is incorrect\n");
 		return -EINVAL;
 	}
 
@@ -501,7 +504,7 @@ static int smb2_usb_get_prop(struct power_supply *psy,
 					      USB_PSY_VOTER);
 		break;
 	default:
-		pr_debug("get prop %d is not supported in usb\n", psp);
+		pr_err("get prop %d is not supported in usb\n", psp);
 		rc = -EINVAL;
 		break;
 	}
@@ -562,7 +565,7 @@ static int smb2_usb_set_prop(struct power_supply *psy,
 		rc = smblib_set_prop_sdp_current_max(chg, val);
 		break;
 	default:
-		pr_debug("set prop %d is not supported\n", psp);
+		pr_err("set prop %d is not supported\n", psp);
 		rc = -EINVAL;
 		break;
 	}
@@ -604,7 +607,7 @@ static int smb2_init_usb_psy(struct smb2 *chip)
 						  &chg->usb_psy_desc,
 						  &usb_cfg);
 	if (IS_ERR(chg->usb_psy)) {
-		pr_debug("Couldn't register USB power supply\n");
+		pr_err("Couldn't register USB power supply\n");
 		return PTR_ERR(chg->usb_psy);
 	}
 
@@ -652,7 +655,7 @@ static int smb2_usb_port_get_prop(struct power_supply *psy,
 		rc = smblib_get_prop_input_current_settled(chg, val);
 		break;
 	default:
-		pr_debug_ratelimited("Get prop %d is not supported in pc_port\n",
+		pr_err_ratelimited("Get prop %d is not supported in pc_port\n",
 				psp);
 		return -EINVAL;
 	}
@@ -673,7 +676,7 @@ static int smb2_usb_port_set_prop(struct power_supply *psy,
 
 	switch (psp) {
 	default:
-		pr_debug_ratelimited("Set prop %d is not supported in pc_port\n",
+		pr_err_ratelimited("Set prop %d is not supported in pc_port\n",
 				psp);
 		rc = -EINVAL;
 		break;
@@ -702,7 +705,7 @@ static int smb2_init_usb_port_psy(struct smb2 *chip)
 						  &usb_port_psy_desc,
 						  &usb_port_cfg);
 	if (IS_ERR(chg->usb_port_psy)) {
-		pr_debug("Couldn't register USB pc_port power supply\n");
+		pr_err("Couldn't register USB pc_port power supply\n");
 		return PTR_ERR(chg->usb_port_psy);
 	}
 
@@ -789,7 +792,7 @@ static int smb2_usb_main_set_prop(struct power_supply *psy,
 		rc = smblib_set_icl_current(chg, val->intval);
 		break;
 	default:
-		pr_debug("set prop %d is not supported\n", psp);
+		pr_err("set prop %d is not supported\n", psp);
 		rc = -EINVAL;
 		break;
 	}
@@ -817,7 +820,7 @@ static int smb2_init_usb_main_psy(struct smb2 *chip)
 						  &usb_main_psy_desc,
 						  &usb_main_cfg);
 	if (IS_ERR(chg->usb_main_psy)) {
-		pr_debug("Couldn't register USB main power supply\n");
+		pr_err("Couldn't register USB main power supply\n");
 		return PTR_ERR(chg->usb_main_psy);
 	}
 
@@ -931,7 +934,7 @@ static int smb2_init_dc_psy(struct smb2 *chip)
 						  &dc_psy_desc,
 						  &dc_cfg);
 	if (IS_ERR(chg->dc_psy)) {
-		pr_debug("Couldn't register USB power supply\n");
+		pr_err("Couldn't register USB power supply\n");
 		return PTR_ERR(chg->dc_psy);
 	}
 
@@ -970,12 +973,10 @@ static enum power_supply_property smb2_batt_props[] = {
 	POWER_SUPPLY_PROP_RERUN_AICL,
 	POWER_SUPPLY_PROP_DP_DM,
 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
+	POWER_SUPPLY_PROP_CHARGING_ENABLED,
 	POWER_SUPPLY_PROP_FCC_STEPPER_ENABLE,
 	POWER_SUPPLY_PROP_CHARGE_FULL,
 	POWER_SUPPLY_PROP_CYCLE_COUNT,
-#ifdef CONFIG_MACH_ASUS_X00T
-	POWER_SUPPLY_PROP_CHARGING_ENABLED,
-#endif
 };
 
 static int smb2_batt_get_prop(struct power_supply *psy,
@@ -999,11 +1000,9 @@ static int smb2_batt_get_prop(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_INPUT_SUSPEND:
 		rc = smblib_get_prop_input_suspend(chg, val);
 		break;
-#ifdef CONFIG_MACH_ASUS_X00T
 	case POWER_SUPPLY_PROP_CHARGING_ENABLED:
 		rc = smblib_get_prop_charging_enabled(chg, val);
 		break;
-#endif
 	case POWER_SUPPLY_PROP_CHARGE_TYPE:
 		rc = smblib_get_prop_batt_charge_type(chg, val);
 		break;
@@ -1017,7 +1016,7 @@ static int smb2_batt_get_prop(struct power_supply *psy,
 		/* do not query RRADC if charger is not present */
 		rc = smblib_get_prop_usb_present(chg, &pval);
 		if (rc < 0)
-			pr_debug("Couldn't get usb present rc=%d\n", rc);
+			pr_err("Couldn't get usb present rc=%d\n", rc);
 
 		rc = -ENODATA;
 		if (pval.intval)
@@ -1093,7 +1092,7 @@ static int smb2_batt_get_prop(struct power_supply *psy,
 		val->intval = chg->fcc_stepper_mode;
 		break;
 	default:
-		pr_debug("batt power supply prop %d not supported\n", psp);
+		pr_err("batt power supply prop %d not supported\n", psp);
 		return -EINVAL;
 	}
 
@@ -1116,11 +1115,9 @@ static int smb2_batt_set_prop(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_INPUT_SUSPEND:
 		rc = smblib_set_prop_input_suspend(chg, val);
 		break;
-#ifdef CONFIG_MACH_ASUS_X00T
 	case POWER_SUPPLY_PROP_CHARGING_ENABLED:
 		rc = smblib_set_prop_charging_enabled(chg, val);
 		break;
-#endif
 	case POWER_SUPPLY_PROP_SYSTEM_TEMP_LEVEL:
 		rc = smblib_set_prop_system_temp_level(chg, val);
 		break;
@@ -1241,7 +1238,7 @@ static int smb2_init_batt_psy(struct smb2 *chip)
 						   &batt_psy_desc,
 						   &batt_cfg);
 	if (IS_ERR(chg->batt_psy)) {
-		pr_debug("Couldn't register battery power supply\n");
+		pr_err("Couldn't register battery power supply\n");
 		return PTR_ERR(chg->batt_psy);
 	}
 
@@ -1284,7 +1281,7 @@ static int smb2_init_vbus_regulator(struct smb2 *chip)
 		rc = PTR_ERR(chg->vbus_vreg->rdev);
 		chg->vbus_vreg->rdev = NULL;
 		if (rc != -EPROBE_DEFER)
-			pr_debug("Couldn't register VBUS regualtor rc=%d\n", rc);
+			pr_err("Couldn't register VBUS regualtor rc=%d\n", rc);
 	}
 
 	return rc;
@@ -1329,7 +1326,7 @@ static int smb2_init_vconn_regulator(struct smb2 *chip)
 		rc = PTR_ERR(chg->vconn_vreg->rdev);
 		chg->vconn_vreg->rdev = NULL;
 		if (rc != -EPROBE_DEFER)
-			pr_debug("Couldn't register VCONN regualtor rc=%d\n", rc);
+			pr_err("Couldn't register VCONN regualtor rc=%d\n", rc);
 	}
 
 	return rc;
@@ -1351,42 +1348,42 @@ static int smb2_config_wipower_input_power(struct smb2 *chip, int uw)
 	ua = div_s64(nw, ZIN_ICL_PT_MAX_MV);
 	rc = smblib_set_charge_param(chg, &chg->param.dc_icl_pt_lv, ua);
 	if (rc < 0) {
-		pr_debug("Couldn't configure dc_icl_pt_lv rc = %d\n", rc);
+		pr_err("Couldn't configure dc_icl_pt_lv rc = %d\n", rc);
 		return rc;
 	}
 
 	ua = div_s64(nw, ZIN_ICL_PT_HV_MAX_MV);
 	rc = smblib_set_charge_param(chg, &chg->param.dc_icl_pt_hv, ua);
 	if (rc < 0) {
-		pr_debug("Couldn't configure dc_icl_pt_hv rc = %d\n", rc);
+		pr_err("Couldn't configure dc_icl_pt_hv rc = %d\n", rc);
 		return rc;
 	}
 
 	ua = div_s64(nw, ZIN_ICL_LV_MAX_MV);
 	rc = smblib_set_charge_param(chg, &chg->param.dc_icl_div2_lv, ua);
 	if (rc < 0) {
-		pr_debug("Couldn't configure dc_icl_div2_lv rc = %d\n", rc);
+		pr_err("Couldn't configure dc_icl_div2_lv rc = %d\n", rc);
 		return rc;
 	}
 
 	ua = div_s64(nw, ZIN_ICL_MID_LV_MAX_MV);
 	rc = smblib_set_charge_param(chg, &chg->param.dc_icl_div2_mid_lv, ua);
 	if (rc < 0) {
-		pr_debug("Couldn't configure dc_icl_div2_mid_lv rc = %d\n", rc);
+		pr_err("Couldn't configure dc_icl_div2_mid_lv rc = %d\n", rc);
 		return rc;
 	}
 
 	ua = div_s64(nw, ZIN_ICL_MID_HV_MAX_MV);
 	rc = smblib_set_charge_param(chg, &chg->param.dc_icl_div2_mid_hv, ua);
 	if (rc < 0) {
-		pr_debug("Couldn't configure dc_icl_div2_mid_hv rc = %d\n", rc);
+		pr_err("Couldn't configure dc_icl_div2_mid_hv rc = %d\n", rc);
 		return rc;
 	}
 
 	ua = div_s64(nw, ZIN_ICL_HV_MAX_MV);
 	rc = smblib_set_charge_param(chg, &chg->param.dc_icl_div2_hv, ua);
 	if (rc < 0) {
-		pr_debug("Couldn't configure dc_icl_div2_hv rc = %d\n", rc);
+		pr_err("Couldn't configure dc_icl_div2_hv rc = %d\n", rc);
 		return rc;
 	}
 
@@ -1466,7 +1463,7 @@ static int smb2_disable_typec(struct smb_charger *chg)
 	}
 
 	/* wait for mode change before enabling FSM */
-	usleep_range(15000, 20000);
+	usleep_range(10000, 11000);
 	/* release FSM from idle state */
 	rc = smblib_masked_write(chg, TYPE_C_INTRPT_ENB_SOFTWARE_CTRL_REG,
 			TYPEC_DISABLE_CMD_BIT, 0);
@@ -1497,7 +1494,7 @@ static int smb2_disable_typec(struct smb_charger *chg)
 	}
 
 	/* wait for mode change before enabling FSM */
-	usleep_range(15000, 20000);
+	usleep_range(10000, 11000);
 	/* release FSM from idle state */
 	rc = smblib_masked_write(chg, TYPE_C_INTRPT_ENB_SOFTWARE_CTRL_REG,
 			TYPEC_DISABLE_CMD_BIT, 0);
@@ -1509,42 +1506,39 @@ static int smb2_disable_typec(struct smb_charger *chg)
 	return rc;
 }
 
-#ifdef CONFIG_MACH_ASUS_X00T
+/* USB alert start */
 struct switch_dev usb_alert_dev;
 void register_usb_alert(void)
 {
 	int ret;
-
 	usb_alert_dev.name = "usb_connector";
 	usb_alert_dev.index = 0;
-
 	ret = switch_dev_register(&usb_alert_dev);
-	if (ret < 0)
-		pr_debug("%s Failed to register switch usb_alert uevent\n",
-			__func__);
+	if(ret<0)
+		pr_err("%s Failed to register switch usb_alert uevent\n", __func__);
 	else
-		pr_info("%s Success to register switch usb_alert uevent\n",
-			__func__);
-}
+		pr_err("%s Success to register switch usb_alert uevent\n", __func__);
 
+
+}
+/* USB alert end */
+
+/* usb_otg start */
 struct switch_dev usb_otg_dev;
 void register_usb_otg(void)
 {
 	int ret;
-
 	usb_otg_dev.name = "usb_otg";
 	usb_otg_dev.index = 0;
-
 	ret = switch_dev_register(&usb_otg_dev);
-	if (ret < 0)
-		pr_debug("%s Failed to register switch usb_otg uevent\n",
-			__func__);
+	if(ret<0)
+		pr_err("%s Failed to register switch usb_otg uevent\n", __func__);
 	else
-		pr_info("%s Success to register switch usb_otg uevent\n",
-			__func__);
-}
-#endif /* CONFIG_MACH_ASUS_X00T */
+		pr_err("%s Success to register switch usb_otg uevent\n", __func__);
 
+
+}
+/* usb_otg end */
 static int smb2_init_hw(struct smb2 *chip)
 {
 	struct smb_charger *chg = &chip->chg;
@@ -1585,7 +1579,7 @@ static int smb2_init_hw(struct smb2 *chip)
 	rc = smblib_masked_write(chg, DC_ENG_SSUPPLY_CFG2_REG,
 				ENG_SSUPPLY_IVREF_OTG_SS_MASK, OTG_SS_SLOW);
 	if (rc < 0) {
-		pr_debug("Couldn't set otg soft start rc=%d\n", rc);
+		pr_err("Couldn't set otg soft start rc=%d\n", rc);
 		return rc;
 	}
 
@@ -1594,7 +1588,7 @@ static int smb2_init_hw(struct smb2 *chip)
 				(chg->wa_flags & OTG_WA) ?
 				chg->param.otg_cl.min_u : chg->otg_cl_ua);
 	if (rc < 0) {
-		pr_debug("Couldn't set otg current limit rc=%d\n", rc);
+		pr_err("Couldn't set otg current limit rc=%d\n", rc);
 		return rc;
 	}
 
@@ -1602,7 +1596,7 @@ static int smb2_init_hw(struct smb2 *chip)
 
 	rc = smblib_read(chg, APSD_RESULT_STATUS_REG, &stat);
 	if (rc < 0) {
-		pr_debug("Couldn't read APSD_RESULT_STATUS rc=%d\n", rc);
+		pr_err("Couldn't read APSD_RESULT_STATUS rc=%d\n", rc);
 		return rc;
 	}
 
@@ -1610,7 +1604,7 @@ static int smb2_init_hw(struct smb2 *chip)
 
 	/* clear the ICL override if it is set */
 	if (smblib_icl_override(chg, false) < 0) {
-		pr_debug("Couldn't disable ICL override rc=%d\n", rc);
+		pr_err("Couldn't disable ICL override rc=%d\n", rc);
 		return rc;
 	}
 
@@ -1705,7 +1699,7 @@ static int smb2_init_hw(struct smb2 *chip)
 			BARK_WDOG_TIMEOUT_MASK | BITE_WDOG_TIMEOUT_MASK,
 			val);
 	if (rc) {
-		pr_debug("Couldn't configue WD config rc=%d\n", rc);
+		pr_err("Couldn't configue WD config rc=%d\n", rc);
 		return rc;
 	}
 
@@ -1717,7 +1711,7 @@ static int smb2_init_hw(struct smb2 *chip)
 			WDOG_TIMER_EN_ON_PLUGIN_BIT |
 			BARK_WDOG_INT_EN_BIT);
 	if (rc) {
-		pr_debug("Couldn't configue WD config rc=%d\n", rc);
+		pr_err("Couldn't configue WD config rc=%d\n", rc);
 		return rc;
 	}
 
@@ -1896,7 +1890,7 @@ static int smb2_chg_config_init(struct smb2 *chip)
 	revid_dev_node = of_parse_phandle(chip->chg.dev->of_node,
 					  "qcom,pmic-revid", 0);
 	if (!revid_dev_node) {
-		pr_debug("Missing qcom,pmic-revid property\n");
+		pr_err("Missing qcom,pmic-revid property\n");
 		return -EINVAL;
 	}
 
@@ -1942,7 +1936,7 @@ static int smb2_chg_config_init(struct smb2 *chip)
 		chg->chg_freq.freq_above_otg_threshold = 800;
 		break;
 	default:
-		pr_debug("PMIC subtype %d not supported\n",
+		pr_err("PMIC subtype %d not supported\n",
 				pmic_rev_id->pmic_subtype);
 		return -EINVAL;
 	}
@@ -2168,13 +2162,13 @@ static int smb2_request_interrupt(struct smb2 *chip,
 
 	irq = of_irq_get_byname(node, irq_name);
 	if (irq < 0) {
-		pr_debug("Couldn't get irq %s byname\n", irq_name);
+		pr_err("Couldn't get irq %s byname\n", irq_name);
 		return irq;
 	}
 
 	irq_index = smb2_get_irq_index_byname(irq_name);
 	if (irq_index < 0) {
-		pr_debug("%s is not a defined irq\n", irq_name);
+		pr_err("%s is not a defined irq\n", irq_name);
 		return irq_index;
 	}
 
@@ -2194,7 +2188,7 @@ static int smb2_request_interrupt(struct smb2 *chip,
 					smb2_irqs[irq_index].handler,
 					IRQF_ONESHOT, irq_name, irq_data);
 	if (rc < 0) {
-		pr_debug("Couldn't request irq %d\n", irq);
+		pr_err("Couldn't request irq %d\n", irq);
 		return rc;
 	}
 
@@ -2292,7 +2286,7 @@ static void smb2_create_debugfs(struct smb2 *chip)
 
 	chip->dfs_root = debugfs_create_dir("charger", NULL);
 	if (IS_ERR_OR_NULL(chip->dfs_root)) {
-		pr_debug("Couldn't create charger debugfs rc=%ld\n",
+		pr_err("Couldn't create charger debugfs rc=%ld\n",
 			(long)chip->dfs_root);
 		return;
 	}
@@ -2300,19 +2294,19 @@ static void smb2_create_debugfs(struct smb2 *chip)
 	file = debugfs_create_file("force_batt_psy_update", S_IRUSR | S_IWUSR,
 			    chip->dfs_root, chip, &force_batt_psy_update_ops);
 	if (IS_ERR_OR_NULL(file))
-		pr_debug("Couldn't create force_batt_psy_update file rc=%ld\n",
+		pr_err("Couldn't create force_batt_psy_update file rc=%ld\n",
 			(long)file);
 
 	file = debugfs_create_file("force_usb_psy_update", S_IRUSR | S_IWUSR,
 			    chip->dfs_root, chip, &force_usb_psy_update_ops);
 	if (IS_ERR_OR_NULL(file))
-		pr_debug("Couldn't create force_usb_psy_update file rc=%ld\n",
+		pr_err("Couldn't create force_usb_psy_update file rc=%ld\n",
 			(long)file);
 
 	file = debugfs_create_file("force_dc_psy_update", S_IRUSR | S_IWUSR,
 			    chip->dfs_root, chip, &force_dc_psy_update_ops);
 	if (IS_ERR_OR_NULL(file))
-		pr_debug("Couldn't create force_dc_psy_update file rc=%ld\n",
+		pr_err("Couldn't create force_dc_psy_update file rc=%ld\n",
 			(long)file);
 }
 
@@ -2323,30 +2317,27 @@ static void smb2_create_debugfs(struct smb2 *chip)
 
 #endif
 
-#ifdef CONFIG_MACH_ASUS_X00T
 #define ATD_CHG_LIMIT_SOC	70
-int charger_limit_enable_flag;
-int charger_limit_value;
+int charger_limit_enable_flag = 0;
+int charger_limit_value = 0;
 static char charger_limit[8] = "0";
-static struct proc_dir_entry *limit_enable_entry;
-static struct proc_dir_entry *limit_entry;
+static struct proc_dir_entry *limit_enable_entry = NULL;
+static struct proc_dir_entry *limit_entry = NULL;
 extern int asus_get_prop_batt_capacity(struct smb_charger *chg);
-#define CHARGER_LIMIT_EN_PROC_FILE	"driver/charger_limit_enable"
-#define CHARGER_LIMIT_PROC_FILE		"driver/charger_limit"
+#define CHARGER_LIMIT_EN_PROC_FILE     "driver/charger_limit_enable"
+#define CHARGER_LIMIT_PROC_FILE     "driver/charger_limit"
 
-ssize_t charger_limit_enable_read_proc(struct file *file, char __user *page,
-					size_t size, loff_t *ppos)
+ ssize_t charger_limit_enable_read_proc(struct file *file, char __user *page, size_t size, loff_t *ppos)
 {
-	char read_data[8] = {0};
+	char read_data[8]={0};
 	int len = 0;
 	int rc;
 
-	/* CMD call again */
-	if (*ppos)
+	if (*ppos)  // CMD call again
 		return 0;
 
-	len = sprintf(read_data, "%d\n", charger_limit_enable_flag);
-	pr_debug("%s, len = %d, data = %s\n", __func__, len, read_data);
+	len = sprintf(read_data,"%d\n", charger_limit_enable_flag);
+	printk("%s , len = %d, data = %s\n", __func__, len, read_data);
 
 	rc = copy_to_user(page, read_data, len);
 	if (rc < 0)
@@ -2357,77 +2348,59 @@ ssize_t charger_limit_enable_read_proc(struct file *file, char __user *page,
 	return len;
 }
 
-static ssize_t charger_limit_enable_write_proc(struct file *file,
-						const char __user *buff,
-						size_t size, loff_t *ppos)
-{
-	char write_data[32] = {0};
+static ssize_t charger_limit_enable_write_proc(struct file *file, const char __user *buff, size_t size, loff_t *ppos)
+{	char wtire_data[32] = {0};
 	int rc;
 	int soc;
-	bool do_it, online;
+	bool do_it,online;
 	union power_supply_propval pval = {0, };
-
 	smblib_get_prop_usb_online(smbchg_dev, &pval);
 	online = pval.intval;
 
 	if (size >= 32)
 		return -EFAULT;
-
-	if (copy_from_user(&write_data, buff, size))
+	if (copy_from_user( &wtire_data, buff, size ))
 		return -EFAULT;
 
-	if (write_data[0] == '1') {
+	if (wtire_data[0] == '1'){
 		charger_limit_enable_flag = 1;
-		soc = asus_get_prop_batt_capacity(smbchg_dev);
-
+		soc =asus_get_prop_batt_capacity(smbchg_dev);
 		do_it = charger_limit_value < soc;
-		if (do_it) {
-			rc = smblib_masked_write(smbchg_dev,
-						CHARGING_ENABLE_CMD_REG,
-						CHARGING_ENABLE_CMD_BIT, 1);
-			if (online)
+		if(do_it ){
+			rc = smblib_masked_write(smbchg_dev, CHARGING_ENABLE_CMD_REG, CHARGING_ENABLE_CMD_BIT, 1);
+			if(online)
 				power_supply_changed(smbchg_dev->batt_psy);
 		}
-
-		pr_debug("%s, write enable 1 soc = %d, limit-value= %d!\n",
-				__func__, soc, charger_limit_value);
-	} else {
+		printk("%s,  write enable 1 soc = %d, limit-value= %d! \n", __func__, soc, charger_limit_value);
+			}
+	else{
 		charger_limit_enable_flag = 0;
-
-		rc = smblib_masked_write(smbchg_dev,
-					CHARGING_ENABLE_CMD_REG,
-					CHARGING_ENABLE_CMD_BIT, 0);
-		if (online)
+		rc = smblib_masked_write(smbchg_dev, CHARGING_ENABLE_CMD_REG, CHARGING_ENABLE_CMD_BIT, 0);
+		if(online)
 			power_supply_changed(smbchg_dev->batt_psy);
-
-		pr_debug("%s, write enable 0, no limit, charging !!\n",
-				__func__);
-	}
-
-	pr_debug("%s, charger_limit_enable_flag = %d\n", __func__,
-			charger_limit_enable_flag);
+		printk("%s, write enable 0,no limit ,charging !!  \n", __func__);
+    }
+	printk("%s, ****************  charger_limit_enable_flag = %d\n", __func__, charger_limit_enable_flag);
 
 	return size;
 }
 
 static const struct file_operations charger_limit_enable_proc_ops = {
-	.read = charger_limit_enable_read_proc,
-	.write = charger_limit_enable_write_proc,
+    .read = charger_limit_enable_read_proc,
+    .write = charger_limit_enable_write_proc,
 };
 
-ssize_t charger_limit_read_proc(struct file *file, char __user *page,
-				size_t size, loff_t *ppos)
-{
-	char read_data[8] = {0};
+ ssize_t charger_limit_read_proc(struct file *file, char __user *page, size_t size, loff_t *ppos)
+ {
+	char read_data[8]={0};
 	int len = 0;
 	int rc;
 
-	/* CMD call again */
-	if (*ppos)
+	if (*ppos)  // CMD call again
 		return 0;
 
-	len = sprintf(read_data, "%d\n", charger_limit_value);
-	pr_debug("%s, len = %d, data = %s\n", __func__, len, read_data);
+	len = sprintf(read_data,"%d\n", charger_limit_value);
+	printk(" %s , len = %d, data = %s\n", __func__, len, read_data);
 
 	rc = copy_to_user(page, read_data, len);
 	if (rc < 0)
@@ -2436,154 +2409,141 @@ ssize_t charger_limit_read_proc(struct file *file, char __user *page,
 	*ppos += len;
 
 	return len;
-}
+ }
 
-static ssize_t charger_limit_write_proc(struct file *file,
-					const char __user *buff, size_t size,
-					loff_t *ppos)
+static ssize_t charger_limit_write_proc(struct file *file, const char __user *buff, size_t size, loff_t *ppos)
 {
-	char write_data[8] = {0};
+	char wtire_data[8] = {0};
 	int soc;
-	bool do_it, online;
+	bool do_it,online;
 	union power_supply_propval pval = {0, };
-
 	smblib_get_prop_usb_online(smbchg_dev, &pval);
 	online = pval.intval;
 
 	if (size >= 32)
 		return -EFAULT;
 
-	if (copy_from_user(&write_data, buff, size))
+	if (copy_from_user( &wtire_data, buff, size ))
 		return -EFAULT;
+	if (wtire_data[0] == '0'){
+		memset(charger_limit,0,8) ;
+	}else{
+		memcpy(charger_limit,wtire_data,8);
+	}
 
-	if (write_data[0] == '0')
-		memset(charger_limit, 0, 8);
-	else
-		memcpy(charger_limit, write_data, 8);
-
-	charger_limit_value = (int)simple_strtol(charger_limit, NULL, 10);
-	soc = asus_get_prop_batt_capacity(smbchg_dev);
+	charger_limit_value = (int)simple_strtol(charger_limit,NULL,10);
+	soc =asus_get_prop_batt_capacity(smbchg_dev);
 
 	if (charger_limit_value > 100 || charger_limit_value < 0)
 		charger_limit_value = ATD_CHG_LIMIT_SOC;
 
 	charger_limit_enable_flag = !!charger_limit_value;
 	if (!charger_limit_enable_flag) {
-		smblib_masked_write(smbchg_dev, CHARGING_ENABLE_CMD_REG,
-					CHARGING_ENABLE_CMD_BIT, 0);
-		if (online)
+		smblib_masked_write(smbchg_dev, CHARGING_ENABLE_CMD_REG, CHARGING_ENABLE_CMD_BIT, 0);
+		if(online)
 			power_supply_changed(smbchg_dev->batt_psy);
-	} else {
+	} else  {
 		do_it = charger_limit_value < soc;
-		if (do_it) {
-			smblib_masked_write(smbchg_dev,
-						CHARGING_ENABLE_CMD_REG,
-						CHARGING_ENABLE_CMD_BIT, 1);
-			if (online)
+		if(do_it){
+			smblib_masked_write(smbchg_dev, CHARGING_ENABLE_CMD_REG, CHARGING_ENABLE_CMD_BIT, 1);
+			if(online)
 				power_supply_changed(smbchg_dev->batt_psy);
 		}
 	}
 
-	pr_debug("%s, limit-value= %d, current-soc = %d\n", __func__,
-			charger_limit_value, soc);
-	pr_debug("%s, limit-flag= %d\n", __func__, charger_limit_enable_flag);
+	printk(" %s, limit-value= %d, current-soc = %d\n", __func__, charger_limit_value, soc);
+	printk(" %s, limit-flag= %d\n", __func__, charger_limit_enable_flag);
 
 	return size;
 }
 
 static const struct file_operations charger_limit_proc_ops = {
-	.read = charger_limit_read_proc,
-	.write = charger_limit_write_proc,
+    .read = charger_limit_read_proc,
+    .write = charger_limit_write_proc,
 };
+
 
 static int init_proc_charger_limit(void)
 {
-	int ret;
+	int ret =0 ;
 
-	limit_enable_entry = proc_create(CHARGER_LIMIT_EN_PROC_FILE, 0666,
-					NULL, &charger_limit_enable_proc_ops);
-	if (limit_enable_entry != NULL) {
-		pr_debug("create proc entry %s success",
-				CHARGER_LIMIT_EN_PROC_FILE);
-		ret = 0;
-	} else {
-		pr_debug("create_proc entry %s failed\n",
-			CHARGER_LIMIT_EN_PROC_FILE);
+	limit_enable_entry = proc_create(CHARGER_LIMIT_EN_PROC_FILE, 0666, NULL, &charger_limit_enable_proc_ops);
+
+	if (limit_enable_entry == NULL)
+	{
+		printk("create_proc entry %s failed\n", CHARGER_LIMIT_EN_PROC_FILE);
 		return -ENOMEM;
 	}
-
-	limit_entry = proc_create(CHARGER_LIMIT_PROC_FILE, 0666, NULL,
-					&charger_limit_proc_ops);
-	if (limit_entry != NULL) {
-		pr_debug("create proc entry %s success",
-				CHARGER_LIMIT_PROC_FILE);
+	else
+	{
+		printk("create proc entry %s success", CHARGER_LIMIT_EN_PROC_FILE);
 		ret = 0;
-	} else {
-		pr_debug("create_proc entry %s failed\n",
-			CHARGER_LIMIT_PROC_FILE);
+	}
+	limit_entry = proc_create(CHARGER_LIMIT_PROC_FILE, 0666, NULL, &charger_limit_proc_ops);
+
+	if (limit_entry == NULL)
+	{
+		printk("create_proc entry %s failed\n", CHARGER_LIMIT_PROC_FILE);
 		return -ENOMEM;
 	}
-
+	else
+	{
+		printk("create proc entry %s success", CHARGER_LIMIT_PROC_FILE);
+		ret = 0;
+	}
 	return ret;
 }
+
 
 static void remove_proc_charger_limit(void)
 {
 	proc_remove(limit_enable_entry);
+	printk("remove_proc %s \n", CHARGER_LIMIT_EN_PROC_FILE);
 	proc_remove(limit_entry);
+	printk("remove_proc %s \n", CHARGER_LIMIT_EN_PROC_FILE);
+
 }
 
-int32_t get_ID_vadc_voltage(void)
-{
+/* Adapter ID start */
+int32_t get_ID_vadc_voltage(void){
 	struct qpnp_vadc_chip *vadc_dev;
 	struct qpnp_vadc_result adc_result;
 	int32_t adc;
-
 	vadc_dev = qpnp_get_vadc(smbchg_dev->dev, "pm-gpio3");
 	if (IS_ERR(vadc_dev)) {
-		pr_debug("%s: qpnp_get_vadc failed\n", __func__);
-		return PTR_ERR(vadc_dev);
+		printk("%s: qpnp_get_vadc failed\n", __func__);
+		return -1;
+	}else{
+		qpnp_vadc_read(vadc_dev, VADC_AMUX2_GPIO, &adc_result); //Read the GPIO2 VADC channel with 1:1 scaling
+		adc = (int) adc_result.physical;
+		adc = adc / 1000; /* uV to mV */
+		printk("%s: adc=%d adc_result.physical=%lld adc_result.chan=0x%x\n", __func__, adc,adc_result.physical,adc_result.chan);
 	}
-
-	/* Read the GPIO2 VADC channel with 1:1 scaling */
-	qpnp_vadc_read(vadc_dev, VADC_AMUX2_GPIO, &adc_result);
-	adc = (int) adc_result.physical;
-
-	/* uV to mV */
-	adc = adc / 1000;
-
-	pr_debug("%s: adc=%d adc_result.physical=%lld adc_result.chan=0x%x\n",
-			__func__, adc, adc_result.physical, adc_result.chan);
-
 	return adc;
 }
-#endif /* CONFIG_MACH_ASUS_X00T */
+/* Adapter ID end */
 
 static int smb2_probe(struct platform_device *pdev)
 {
 	struct smb2 *chip;
 	struct smb_charger *chg;
+	struct gpio_control *gpio_ctrl;
 	int rc = 0;
+	u8 HVDVP_reg;
+	u8 USBIN_AICL_reg;
 	union power_supply_propval val;
 	int usb_present, batt_present, batt_health, batt_charge_type;
-#ifdef CONFIG_MACH_ASUS_X00T
-	struct gpio_control *gpio_ctrl;
-	u8 HVDVP_reg, USBIN_AICL_reg;
-#endif
 
 	chip = devm_kzalloc(&pdev->dev, sizeof(*chip), GFP_KERNEL);
+	printk("enter smb2_probe\n");
 	if (!chip)
 		return -ENOMEM;
-
-#ifdef CONFIG_MACH_ASUS_X00T
-	/* ASUS BSP: allocate GPIO control */
-	pr_debug("ADC_SW_EN=%d, ADCPWREN_PMI_GP1=%d\n", gpio_ctrl->ADC_SW_EN,
-			gpio_ctrl->ADCPWREN_PMI_GP1);
+//ASUS BSP allocate GPIO control +++
 	gpio_ctrl = devm_kzalloc(&pdev->dev, sizeof(*gpio_ctrl), GFP_KERNEL);
+	printk("ADC_SW_EN=%d,ADCPWREN_PMI_GP1=%d\n",gpio_ctrl->ADC_SW_EN,gpio_ctrl->ADCPWREN_PMI_GP1);
 	if (!gpio_ctrl)
 		return -ENOMEM;
-#endif
-
+//ASUS BSP allocate GPIO control ---
 	chg = &chip->chg;
 	chg->dev = &pdev->dev;
 	chg->param = v1_params;
@@ -2593,68 +2553,55 @@ static int smb2_probe(struct platform_device *pdev)
 	chg->mode = PARALLEL_MASTER;
 	chg->irq_info = smb2_irqs;
 	chg->name = "PMI";
-#ifdef CONFIG_MACH_ASUS_X00T
+/* Realize jeita start */
 	wake_lock_init(&asus_chg_lock, WAKE_LOCK_SUSPEND, "asus_chg_lock");
-
-	/* ASUS BSP: add globe device struct */
-	smbchg_dev = chg;
-
-	/* ASUS BSP: add gpio control struct */
-	global_gpio = gpio_ctrl;
-
-	/* ASUS BSP: Request ADC_SW_EN-gpios59, ADCPWREN_PMI_GP1-gpios34 */
-	gpio_ctrl->ADC_SW_EN = of_get_named_gpio(pdev->dev.of_node,
-						"ADC_SW_EN-gpios59", 0);
-
+	smbchg_dev = chg;			//ASUS BSP add globe device struct +++
+/* Realize jeita end */
+	global_gpio = gpio_ctrl;	//ASUS BSP add gpio control struct +++
+	gpio_ctrl->ADC_SW_EN = of_get_named_gpio(pdev->dev.of_node, "ADC_SW_EN-gpios59", 0);
 	rc = gpio_request(gpio_ctrl->ADC_SW_EN, "ADC_SW_EN-gpios59");
 	if (rc)
-		pr_debug("%s: failed to request ADC_SW_EN-gpios59\n",
-			__func__);
+		CHG_DBG_E("%s: failed to request ADC_SW_EN-gpios59\n", __func__);
 	else
-		pr_debug("%s: Success to request ADC_SW_EN-gpios59 %d\n",
-				__func__, (int)gpio_ctrl->ADC_SW_EN);
-
-	gpio_ctrl->ADCPWREN_PMI_GP1 = of_get_named_gpio(pdev->dev.of_node,
-						"ADCPWREN_PMI_GP1-gpios34", 0);
-
-	rc = gpio_request(gpio_ctrl->ADCPWREN_PMI_GP1,
-				"ADCPWREN_PMI_GP1-gpios34");
+		CHG_DBG("%s: Success to request ADC_SW_EN-gpios59 %d\n", __func__,(int)gpio_ctrl->ADC_SW_EN);
+	gpio_ctrl->ADCPWREN_PMI_GP1 = of_get_named_gpio(pdev->dev.of_node, "ADCPWREN_PMI_GP1-gpios34", 0);
+	rc = gpio_request(gpio_ctrl->ADCPWREN_PMI_GP1, "ADCPWREN_PMI_GP1-gpios34");
 	if (rc)
-		pr_debug("%s: failed to request ADCPWREN_PMI_GP1-gpios34\n",
-			__func__);
-	else {
-		pr_debug("%s: Success to request ADCPWREN_PMI_GP1-gpios34 %d\n",
-				__func__, (int)gpio_ctrl->ADCPWREN_PMI_GP1);
+		CHG_DBG_E("%s: failed to request ADCPWREN_PMI_GP1-gpios34\n", __func__);
+	else
+		CHG_DBG("%s: Success to request ADCPWREN_PMI_GP1-gpios34 %d\n", __func__,(int)gpio_ctrl->ADCPWREN_PMI_GP1);
 
+	if(!rc)
+	{
+		printk("smb2_probe pull down gpio\n");
 		gpio_direction_output(gpio_ctrl->ADCPWREN_PMI_GP1, 0);
 	}
-
 	rc = gpio_get_value(gpio_ctrl->ADCPWREN_PMI_GP1);
-	pr_debug("ADCPWREN_PMI_GP1 init H/L %d\n", rc);
-#endif /* CONFIG_MACH_ASUS_X00T */
-
+	CHG_DBG("ADCPWREN_PMI_GP1 init H/L %d\n",rc);
+//ASUS BSP : Request Request ADC_SW_EN-gpios59, ADCPWREN_PMI_GP1-gpios34 ---
+/* Adapter ID end */
 	chg->regmap = dev_get_regmap(chg->dev->parent, NULL);
 	if (!chg->regmap) {
-		pr_debug("parent regmap is missing\n");
+		pr_err("parent regmap is missing\n");
 		return -EINVAL;
 	}
 
 	rc = smb2_chg_config_init(chip);
 	if (rc < 0) {
 		if (rc != -EPROBE_DEFER)
-			pr_debug("Couldn't setup chg_config rc=%d\n", rc);
+			pr_err("Couldn't setup chg_config rc=%d\n", rc);
 		return rc;
 	}
 
 	rc = smb2_parse_dt(chip);
 	if (rc < 0) {
-		pr_debug("Couldn't parse device tree rc=%d\n", rc);
+		pr_err("Couldn't parse device tree rc=%d\n", rc);
 		goto cleanup;
 	}
 
 	rc = smblib_init(chg);
 	if (rc < 0) {
-		pr_debug("Smblib_init failed rc=%d\n", rc);
+		pr_err("Smblib_init failed rc=%d\n", rc);
 		goto cleanup;
 	}
 
@@ -2663,14 +2610,14 @@ static int smb2_probe(struct platform_device *pdev)
 
 	rc = smb2_init_vbus_regulator(chip);
 	if (rc < 0) {
-		pr_debug("Couldn't initialize vbus regulator rc=%d\n",
+		pr_err("Couldn't initialize vbus regulator rc=%d\n",
 			rc);
 		goto cleanup;
 	}
 
 	rc = smb2_init_vconn_regulator(chip);
 	if (rc < 0) {
-		pr_debug("Couldn't initialize vconn regulator rc=%d\n",
+		pr_err("Couldn't initialize vconn regulator rc=%d\n",
 				rc);
 		goto cleanup;
 	}
@@ -2693,116 +2640,106 @@ static int smb2_probe(struct platform_device *pdev)
 
 	rc = smb2_init_hw(chip);
 	if (rc < 0) {
-		pr_debug("Couldn't initialize hardware rc=%d\n", rc);
+		pr_err("Couldn't initialize hardware rc=%d\n", rc);
 		goto cleanup;
 	}
 
 	rc = smb2_init_dc_psy(chip);
 	if (rc < 0) {
-		pr_debug("Couldn't initialize dc psy rc=%d\n", rc);
+		pr_err("Couldn't initialize dc psy rc=%d\n", rc);
 		goto cleanup;
 	}
 
 	rc = smb2_init_usb_psy(chip);
 	if (rc < 0) {
-		pr_debug("Couldn't initialize usb psy rc=%d\n", rc);
+		pr_err("Couldn't initialize usb psy rc=%d\n", rc);
 		goto cleanup;
 	}
 
 	rc = smb2_init_usb_main_psy(chip);
 	if (rc < 0) {
-		pr_debug("Couldn't initialize usb main psy rc=%d\n", rc);
+		pr_err("Couldn't initialize usb main psy rc=%d\n", rc);
 		goto cleanup;
 	}
 
 	rc = smb2_init_usb_port_psy(chip);
 	if (rc < 0) {
-		pr_debug("Couldn't initialize usb pc_port psy rc=%d\n", rc);
+		pr_err("Couldn't initialize usb pc_port psy rc=%d\n", rc);
 		goto cleanup;
 	}
 
 	rc = smb2_init_batt_psy(chip);
 	if (rc < 0) {
-		pr_debug("Couldn't initialize batt psy rc=%d\n", rc);
+		pr_err("Couldn't initialize batt psy rc=%d\n", rc);
 		goto cleanup;
 	}
 
 	rc = smb2_determine_initial_status(chip);
 	if (rc < 0) {
-		pr_debug("Couldn't determine initial status rc=%d\n",
+		pr_err("Couldn't determine initial status rc=%d\n",
 			rc);
 		goto cleanup;
 	}
 
 	rc = smb2_request_interrupts(chip);
 	if (rc < 0) {
-		pr_debug("Couldn't request interrupts rc=%d\n", rc);
+		pr_err("Couldn't request interrupts rc=%d\n", rc);
 		goto cleanup;
 	}
 
 	rc = smb2_post_init(chip);
 	if (rc < 0) {
-		pr_debug("Failed in post init rc=%d\n", rc);
+		pr_err("Failed in post init rc=%d\n", rc);
 		goto cleanup;
 	}
 
-#ifdef CONFIG_MACH_ASUS_X00T
 	init_proc_charger_limit();
-#endif
 
 	smb2_create_debugfs(chip);
 
 	rc = smblib_get_prop_usb_present(chg, &val);
 	if (rc < 0) {
-		pr_debug("Couldn't get usb present rc=%d\n", rc);
+		pr_err("Couldn't get usb present rc=%d\n", rc);
 		goto cleanup;
 	}
 	usb_present = val.intval;
 
 	rc = smblib_get_prop_batt_present(chg, &val);
 	if (rc < 0) {
-		pr_debug("Couldn't get batt present rc=%d\n", rc);
+		pr_err("Couldn't get batt present rc=%d\n", rc);
 		goto cleanup;
 	}
 	batt_present = val.intval;
 
 	rc = smblib_get_prop_batt_health(chg, &val);
 	if (rc < 0) {
-		pr_debug("Couldn't get batt health rc=%d\n", rc);
+		pr_err("Couldn't get batt health rc=%d\n", rc);
 		val.intval = POWER_SUPPLY_HEALTH_UNKNOWN;
 	}
 	batt_health = val.intval;
 
 	rc = smblib_get_prop_batt_charge_type(chg, &val);
 	if (rc < 0) {
-		pr_debug("Couldn't get batt charge type rc=%d\n", rc);
+		pr_err("Couldn't get batt charge type rc=%d\n", rc);
 		goto cleanup;
 	}
 	batt_charge_type = val.intval;
 
 	device_init_wakeup(chg->dev, true);
-
-#ifdef CONFIG_MACH_ASUS_X00T
 	rc = smblib_read(smbchg_dev, USBIN_OPTIONS_1_CFG_REG, &HVDVP_reg);
-	rc = smblib_masked_write(smbchg_dev, USBIN_OPTIONS_1_CFG_REG,
-					HVDCP_EN_BIT, 0x0);
+	printk("enter1 smb2_probe HVDVP_reg=0x%x\n",HVDVP_reg);
+	rc = smblib_masked_write(smbchg_dev, USBIN_OPTIONS_1_CFG_REG, HVDCP_EN_BIT, 0x0);
 	rc = smblib_read(smbchg_dev, USBIN_OPTIONS_1_CFG_REG, &HVDVP_reg);
 	if (rc < 0)
-		pr_debug("%s: Failed to set USBIN_OPTIONS_1_CFG_REG\n", __func__);
-
-	rc = smblib_read(smbchg_dev, USBIN_AICL_OPTIONS_CFG_REG,
-				&USBIN_AICL_reg);
-	rc = smblib_masked_write(smbchg_dev, USBIN_AICL_OPTIONS_CFG_REG,
-				SUSPEND_ON_COLLAPSE_USBIN_BIT, 0x0);
-	rc = smblib_read(smbchg_dev, USBIN_AICL_OPTIONS_CFG_REG,
-				&USBIN_AICL_reg);
+		CHG_DBG_E("%s: Failed to set USBIN_OPTIONS_1_CFG_REG\n", __func__);
+	rc = smblib_read(smbchg_dev, USBIN_AICL_OPTIONS_CFG_REG, &USBIN_AICL_reg);
+	printk("enter1 smb2_probe USBIN_AICL_reg=0x%x\n",USBIN_AICL_reg);
+	rc = smblib_masked_write(smbchg_dev, USBIN_AICL_OPTIONS_CFG_REG, SUSPEND_ON_COLLAPSE_USBIN_BIT, 0x0);
+	rc = smblib_read(smbchg_dev, USBIN_AICL_OPTIONS_CFG_REG, &USBIN_AICL_reg);
 	if (rc < 0)
-		pr_debug("%s: Failed to set USBIN_OPTIONS_1_CFG_REG\n", __func__);
-
+		CHG_DBG_E("%s: Failed to set USBIN_OPTIONS_1_CFG_REG\n", __func__);
 	register_usb_alert();
 	register_usb_otg();
-#endif
-
 	pr_info("QPNP SMB2 probed successfully usb:present=%d type=%d batt:present = %d health = %d charge = %d\n",
 		usb_present, chg->real_charger_type,
 		batt_present, batt_health, batt_charge_type);
@@ -2828,30 +2765,26 @@ cleanup:
 	smblib_deinit(chg);
 
 	platform_set_drvdata(pdev, NULL);
-#ifdef CONFIG_MACH_ASUS_X00T
 	remove_proc_charger_limit();
-#endif
 	return rc;
 }
-
-#ifdef CONFIG_MACH_ASUS_X00T
+/* sw jeita per min in suspend start */
 #define JEITA_MINIMUM_INTERVAL (30)
-
 static int smb2_resume(struct device *dev)
 {
 	struct timespec mtNow;
 	int nextJEITAinterval;
 
-	if (!asus_get_prop_usb_present(smbchg_dev))
+	if (!asus_get_prop_usb_present(smbchg_dev)) {
 		return 0;
-
+	}
 	asus_smblib_stay_awake(smbchg_dev);
 	mtNow = current_kernel_time();
 
-	/* BSP Austin_Tseng: if next JEITA time less than 30s,
-	 * do JEITA (next JEITA time = last JEITA time + 60s)
-	 */
+	/*BSP Austin_Tseng: if next JEITA time less than 30s, do JEITA
+			(next JEITA time = last JEITA time + 60s)*/
 	nextJEITAinterval = 60 - (mtNow.tv_sec - last_jeita_time.tv_sec);
+	pr_debug("%s: nextJEITAinterval = %d\n", __func__, nextJEITAinterval);
 	if (nextJEITAinterval <= JEITA_MINIMUM_INTERVAL) {
 		smblib_asus_monitor_start(smbchg_dev, 0);
 		cancel_delayed_work(&smbchg_dev->asus_batt_RTC_work);
@@ -2859,11 +2792,9 @@ static int smb2_resume(struct device *dev)
 		smblib_asus_monitor_start(smbchg_dev, nextJEITAinterval * 1000);
 		asus_smblib_relax(smbchg_dev);
 	}
-
 	return 0;
 }
-#endif /* CONFIG_MACH_ASUS_X00T */
-
+/* sw jeita per min in suspend end */
 static int smb2_remove(struct platform_device *pdev)
 {
 	struct smb2 *chip = platform_get_drvdata(pdev);
@@ -2900,13 +2831,11 @@ static void smb2_shutdown(struct platform_device *pdev)
 	smblib_masked_write(chg, USBIN_OPTIONS_1_CFG_REG,
 				 AUTO_SRC_DETECT_BIT, AUTO_SRC_DETECT_BIT);
 }
-
-#ifdef CONFIG_MACH_ASUS_X00T
+/* sw jeita per min in suspend start */
 static const struct dev_pm_ops smb2_pm_ops = {
 	.resume		= smb2_resume,
 };
-#endif
-
+/* sw jeita per min in suspend end */
 static const struct of_device_id match_table[] = {
 	{ .compatible = "qcom,qpnp-smb2", },
 	{ },
@@ -2917,9 +2846,9 @@ static struct platform_driver smb2_driver = {
 		.name		= "qcom,qpnp-smb2",
 		.owner		= THIS_MODULE,
 		.of_match_table	= match_table,
-#ifdef CONFIG_MACH_ASUS_X00T
-		.pm		= &smb2_pm_ops,
-#endif
+/* sw jeita per min in suspend start */
+		.pm			= &smb2_pm_ops,
+/* sw jeita per min in suspend end*/
 	},
 	.probe		= smb2_probe,
 	.remove		= smb2_remove,
