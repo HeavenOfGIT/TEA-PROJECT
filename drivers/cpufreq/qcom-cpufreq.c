@@ -30,10 +30,10 @@
 #include <trace/events/power.h>
 
 // AP: Default startup frequencies
-#define CONFIG_CPU_FREQ_MIN_CLUSTER1	300000
-#define CONFIG_CPU_FREQ_MAX_CLUSTER1	1958400
-#define CONFIG_CPU_FREQ_MIN_CLUSTER2	300000
-#define CONFIG_CPU_FREQ_MAX_CLUSTER2	2000000
+#define CONFIG_CPU_FREQ_MIN_CLUSTER1	633600
+#define CONFIG_CPU_FREQ_MAX_CLUSTER1	1612800
+#define CONFIG_CPU_FREQ_MIN_CLUSTER2	1113000
+#define CONFIG_CPU_FREQ_MAX_CLUSTER2	1804800
 
 static DEFINE_MUTEX(l2bw_lock);
 
@@ -63,7 +63,7 @@ static int set_cpu_freq(struct cpufreq_policy *policy, unsigned int new_freq,
 //	trace_cpu_frequency_switch_start(freqs.old, freqs.new, policy->cpu);
 	cpufreq_freq_transition_begin(policy, &freqs);
 
-	rate = new_freq * 1500;
+	rate = new_freq * 1000;
 	rate = clk_round_rate(cpu_clk[policy->cpu], rate);
 	ret = clk_set_rate(cpu_clk[policy->cpu], rate);
 	cpufreq_freq_transition_end(policy, &freqs, ret);
@@ -130,7 +130,7 @@ static int msm_cpufreq_verify(struct cpufreq_policy *policy)
 
 static unsigned int msm_cpufreq_get_freq(unsigned int cpu)
 {
-	return clk_get_rate(cpu_clk[cpu]) / 1500;
+	return clk_get_rate(cpu_clk[cpu]) / 1000;
 }
 
 static int msm_cpufreq_init(struct cpufreq_policy *policy)
@@ -184,7 +184,7 @@ static int msm_cpufreq_init(struct cpufreq_policy *policy)
 		policy->max = CONFIG_CPU_FREQ_MAX_CLUSTER2;
 	}
 
-	cur_freq = clk_get_rate(cpu_clk[policy->cpu])/1500;
+	cur_freq = clk_get_rate(cpu_clk[policy->cpu])/1000;
 
 	if (cpufreq_frequency_table_target(policy, table, cur_freq,
 	    CPUFREQ_RELATION_H, &index) &&
