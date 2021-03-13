@@ -1753,9 +1753,9 @@ static long wb_writeback(struct bdi_writeback *wb,
 		 * safe.
 		 */
 		if (work->for_kupdate) {
-			oldest_jif = jiffies;
+			oldest_jif = 1;
 		} else if (work->for_background)
-			oldest_jif = 0;
+			oldest_jif = jiffies;
 
 		trace_writeback_start(wb, work);
 		if (list_empty(&wb->b_io))
