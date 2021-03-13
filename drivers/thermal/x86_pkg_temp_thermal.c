@@ -175,7 +175,7 @@ static int sys_get_curr_temp(struct thermal_zone_device *tzd, int *temp)
 	if (eax & 0x80000000) {
 		*temp = phy_dev_entry->tj_max -
 				((eax >> 16) & 0x7f) * 1000;
-		pr_debug("sys_get_curr_temp %d\n", *temp);
+		pr_err("sys_get_curr_temp %d\n", *temp);
 		return 0;
 	}
 
@@ -214,7 +214,7 @@ static int sys_get_trip_temp(struct thermal_zone_device *tzd,
 		*temp = phy_dev_entry->tj_max - thres_reg_value * 1000;
 	else
 		*temp = 0;
-	pr_debug("sys_get_trip_temp %d\n", *temp);
+	pr_err("sys_get_trip_temp %d\n", *temp);
 
 	return 0;
 }
@@ -347,7 +347,7 @@ static void pkg_temp_thermal_threshold_work_fn(struct work_struct *work)
 		notify = true;
 	}
 	if (notify) {
-		pr_debug("thermal_zone_device_update\n");
+		pr_err("thermal_zone_device_update\n");
 		thermal_zone_device_update(phdev->tzone);
 	}
 }
@@ -458,7 +458,7 @@ static int pkg_temp_thermal_device_add(unsigned int cpu)
 				&phy_dev_entry->start_pkg_therm_high);
 
 	list_add_tail(&phy_dev_entry->list, &phy_dev_list);
-	pr_debug("pkg_temp_thermal_device_add :phy_id %d cpu %d\n",
+	pr_err("pkg_temp_thermal_device_add :phy_id %d cpu %d\n",
 			phy_dev_entry->phys_proc_id, cpu);
 
 	mutex_unlock(&phy_dev_list_mutex);
@@ -488,7 +488,7 @@ static int pkg_temp_thermal_device_remove(unsigned int cpu)
 	/* If we are loosing the first cpu for this package, we need change */
 	if (phdev->first_cpu == cpu) {
 		phdev->first_cpu = find_siblings_cpu(cpu);
-		pr_debug("thermal_device_remove: first cpu switched %d\n",
+		pr_err("thermal_device_remove: first cpu switched %d\n",
 					phdev->first_cpu);
 	}
 	/*
@@ -498,7 +498,7 @@ static int pkg_temp_thermal_device_remove(unsigned int cpu)
 	* thermal zone is removed.
 	*/
 	--phdev->ref_cnt;
-	pr_debug("thermal_device_remove: pkg: %d cpu %d ref_cnt %d\n",
+	pr_err("thermal_device_remove: pkg: %d cpu %d ref_cnt %d\n",
 					phys_proc_id, cpu, phdev->ref_cnt);
 	if (!phdev->ref_cnt)
 		list_for_each_entry_safe(phdev, n, &phy_dev_list, list) {
@@ -529,14 +529,14 @@ static int get_core_online(unsigned int cpu)
 	} else {
 		mutex_lock(&phy_dev_list_mutex);
 		++phdev->ref_cnt;
-		pr_debug("get_core_online: cpu %d ref_cnt %d\n",
+		pr_err("get_core_online: cpu %d ref_cnt %d\n",
 						cpu, phdev->ref_cnt);
 		mutex_unlock(&phy_dev_list_mutex);
 	}
 	INIT_DELAYED_WORK(&per_cpu(pkg_temp_thermal_threshold_work, cpu),
 			pkg_temp_thermal_threshold_work_fn);
 
-	pr_debug("get_core_online: cpu %d successful\n", cpu);
+	pr_err("get_core_online: cpu %d successful\n", cpu);
 
 	return 0;
 }
@@ -547,7 +547,7 @@ static void put_core_offline(unsigned int cpu)
 		cancel_delayed_work_sync(
 			&per_cpu(pkg_temp_thermal_threshold_work, cpu));
 
-	pr_debug("put_core_offline: cpu %d\n", cpu);
+	pr_err("put_core_offline: cpu %d\n", cpu);
 }
 
 static int pkg_temp_thermal_cpu_callback(struct notifier_block *nfb,

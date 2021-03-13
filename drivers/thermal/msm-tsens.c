@@ -558,7 +558,7 @@ zonemask_store(struct device *dev, struct device_attribute *attr,
 		pr_err("Invalid command line arguments\n");
 		count = -EINVAL;
 	} else {
-		pr_debug("store zone_mtc=%d th1=%d th2=%d\n",
+		pr_err("store zone_mtc=%d th1=%d th2=%d\n",
 				tmdev->mtcsys.zone_mtc,
 				tmdev->mtcsys.th1 , tmdev->mtcsys.th2);
 		ret = tsens_set_mtc_zone_sw_mask(tmdev->mtcsys.zone_mtc ,
@@ -682,7 +682,7 @@ static int create_tsens_mtc_sysfs(struct platform_device *pdev)
 			goto error;
 	}
 
-	pr_debug("create_tsens_mtc_sysfs success\n");
+	pr_err("create_tsens_mtc_sysfs success\n");
 
 	return result;
 
@@ -710,7 +710,7 @@ static int tsens_tz_code_to_degc(int adc_code, int sensor_sw_id,
 	else
 		degc = num/den;
 
-	pr_debug("raw_code:0x%x, sensor_num:%d, degc:%d, offset:%d\n",
+	pr_err("raw_code:0x%x, sensor_num:%d, degc:%d, offset:%d\n",
 			adc_code, idx, degc, tmdev->sensor[idx].offset);
 
 	return degc;
@@ -726,7 +726,7 @@ static int tsens_tz_degc_to_code(int degc, int idx,
 		code = TSENS_THRESHOLD_MAX_CODE;
 	else if (code < TSENS_THRESHOLD_MIN_CODE)
 		code = TSENS_THRESHOLD_MIN_CODE;
-	pr_debug("raw_code:0x%x, sensor_num:%d, degc:%d\n",
+	pr_err("raw_code:0x%x, sensor_num:%d, degc:%d\n",
 			code, idx, degc);
 	return code;
 }
@@ -749,14 +749,14 @@ static int msm_tsens_get_temp(int sensor_client_id, int *temp)
 		return -EPROBE_DEFER;
 	}
 
-	pr_debug("sensor_client_id:%d\n", sensor_client_id);
+	pr_err("sensor_client_id:%d\n", sensor_client_id);
 
 	sensor_hw_num = get_tsens_sensor_for_client_id(tmdev, sensor_client_id);
 	if (sensor_hw_num < 0) {
 		pr_err("cannot read the temperature\n");
 		return sensor_hw_num;
 	}
-	pr_debug("sensor_hw_num:%d\n", sensor_hw_num);
+	pr_err("sensor_hw_num:%d\n", sensor_hw_num);
 
 	if (tmdev->tsens_type == TSENS_TYPE2) {
 		trdy_addr = TSENS2_TRDY_ADDR(tmdev->tsens_addr);
@@ -886,7 +886,7 @@ int tsens_get_temp(struct tsens_device *device, int *temp)
 	int rc = 0;
 
 	if (tsens_is_ready() <= 0) {
-		pr_debug("TSENS early init not done\n");
+		pr_err("TSENS early init not done\n");
 		return -EPROBE_DEFER;
 	}
 
@@ -901,7 +901,7 @@ EXPORT_SYMBOL(tsens_get_temp);
 int tsens_get_max_sensor_num(uint32_t *tsens_num_sensors)
 {
 	if (tsens_is_ready() <= 0) {
-		pr_debug("TSENS early init not done\n");
+		pr_err("TSENS early init not done\n");
 		return -EPROBE_DEFER;
 	}
 
@@ -910,7 +910,7 @@ int tsens_get_max_sensor_num(uint32_t *tsens_num_sensors)
 	if (get_all_tsens_controller_sensor_count(tsens_num_sensors) == NULL)
 		return -EINVAL;
 
-	pr_debug("%d\n", *tsens_num_sensors);
+	pr_err("%d\n", *tsens_num_sensors);
 
 	return 0;
 }
@@ -1219,7 +1219,7 @@ static int tsens_tz_notify(struct thermal_zone_device *thermal,
 {
 	/* Critical temperature threshold are enabled and will
 	 * shutdown the device once critical thresholds are crossed. */
-	pr_debug("%s debug\n", __func__);
+	pr_err("%s debug\n", __func__);
 	return 1;
 }
 
@@ -1439,7 +1439,7 @@ static void tsens_poll(struct work_struct *work)
 				&tmdev->tsens_rslt_completion,
 				tsens_completion_timeout_hz);
 	if (!rc) {
-		pr_debug("Switch to polling, TSENS critical interrupt failed\n");
+		pr_err("Switch to polling, TSENS critical interrupt failed\n");
 		sensor_status_addr = TSENS_TM_SN_STATUS(tmdev->tsens_addr);
 		sensor_int_mask_addr =
 			TSENS_TM_CRITICAL_INT_MASK(tmdev->tsens_addr);
@@ -1448,7 +1448,7 @@ static void tsens_poll(struct work_struct *work)
 
 		spin_lock_irqsave(&tmdev->tsens_crit_lock, flags);
 		if (!tmdev->crit_set) {
-			pr_debug("Ignore this check cycle\n");
+			pr_err("Ignore this check cycle\n");
 			spin_unlock_irqrestore(&tmdev->tsens_crit_lock, flags);
 			goto re_schedule;
 		}
@@ -1611,7 +1611,7 @@ int tsens_mtc_reset_history_counter(unsigned int zone)
 				(sensor_addr + (zone * TSENS_SN_ADDR_OFFSET)));
 		reg_cntl = readl_relaxed((sensor_addr +
 				(zone * TSENS_SN_ADDR_OFFSET)));
-		pr_debug("tsens : zone =%d reg=%x\n", zone , reg_cntl);
+		pr_err("tsens : zone =%d reg=%x\n", zone , reg_cntl);
 	}
 
 	/*Disble the bit to start counter*/
@@ -1619,7 +1619,7 @@ int tsens_mtc_reset_history_counter(unsigned int zone)
 				(sensor_addr + (zone * TSENS_SN_ADDR_OFFSET)));
 	reg_cntl = readl_relaxed((sensor_addr +
 			(zone * TSENS_SN_ADDR_OFFSET)));
-	pr_debug("tsens : zone =%d reg=%x\n", zone , reg_cntl);
+	pr_err("tsens : zone =%d reg=%x\n", zone , reg_cntl);
 
 	return 0;
 }
@@ -1666,7 +1666,7 @@ int tsens_set_mtc_zone_sw_mask(unsigned int zone , unsigned int th1_enable,
 				(zone * TSENS_SN_ADDR_OFFSET)));
 	reg_cntl = readl_relaxed((sensor_addr +
 				(zone *	TSENS_SN_ADDR_OFFSET)));
-	pr_debug("tsens : zone =%d th1=%d th2=%d reg=%x\n",
+	pr_err("tsens : zone =%d th1=%d th2=%d reg=%x\n",
 		zone , th1_enable , th2_enable , reg_cntl);
 
 	return 0;
@@ -1712,10 +1712,10 @@ int tsens_get_mtc_zone_log(unsigned int zone , void *zone_log)
 				  >> TSENS_LOGS_LOG5_SHIFT;
 		for (i = 0; i < (TSENS_MTC_ZONE_LOG_SIZE); i++) {
 			*(zlog+i) = log[i];
-			pr_debug("Log[%d]=%d\n", i , log[i]);
+			pr_err("Log[%d]=%d\n", i , log[i]);
 		}
 	} else {
-		pr_debug("tsens: Valid bit disabled\n");
+		pr_err("tsens: Valid bit disabled\n");
 		return -EINVAL;
 	}
 	return 0;
@@ -1749,7 +1749,7 @@ int tsens_get_mtc_zone_history(unsigned int zone , void *zone_hist)
 			  >> TSENS_PS_RED_CMD_SHIFT;
 	for (i = 0; i < (TSENS_MTC_ZONE_HISTORY_SIZE); i++) {
 		*(zhist+i) = hist[i];
-		pr_debug("tsens : %d\n", hist[i]);
+		pr_err("tsens : %d\n", hist[i]);
 	}
 
 	return 0;
@@ -1859,7 +1859,7 @@ static irqreturn_t tsens_tm_critical_irq_thread(int irq, void *data)
 					&sensor_sw_id, tm);
 			if (rc < 0)
 				pr_err("tsens mapping index not found\n");
-			pr_debug("sensor:%d trigger temp (%d degC) with count:%d\n",
+			pr_err("sensor:%d trigger temp (%d degC) with count:%d\n",
 				tm->sensor[i].sensor_hw_num,
 				(status & TSENS_TM_SN_LAST_TEMP_MASK),
 				tm->tsens_critical_irq_cnt);
@@ -1967,9 +1967,9 @@ static irqreturn_t tsens_tm_irq_thread(int irq, void *data)
 					tm->sensor[i].sensor_hw_num,
 					&sensor_sw_id, tm);
 			if (rc < 0)
-				pr_debug("tsens mapping index not found\n");
+				pr_err("tsens mapping index not found\n");
 			/* Use sensor_client_id for multiple controllers */
-			pr_debug("sensor:%d trigger temp (%d degC)\n",
+			pr_err("sensor:%d trigger temp (%d degC)\n",
 				tm->sensor[i].sensor_client_id,
 				(status & TSENS_TM_SN_LAST_TEMP_MASK));
 			if (upper_thr) {
@@ -2047,7 +2047,7 @@ static irqreturn_t tsens_irq_thread(int irq, void *data)
 			tsens_tz_get_temp(tm->sensor[i].tz_dev, &temp);
 			thermal_sensor_trip(tm->sensor[i].tz_dev, trip, temp);
 
-			pr_debug("sensor:%d trigger temp (%d degC)\n",
+			pr_err("sensor:%d trigger temp (%d degC)\n",
 				tm->sensor[i].sensor_hw_num,
 				tsens_tz_code_to_degc((status &
 				TSENS_SN_STATUS_TEMP_MASK),
@@ -2152,7 +2152,7 @@ static int get_device_tree_data(struct platform_device *pdev,
 	tmdev->res_calib_mem = platform_get_resource_byname(pdev,
 				IORESOURCE_MEM, "tsens_eeprom_physical");
 	if (!tmdev->res_calib_mem) {
-		pr_debug("Using controller programmed gain and offset\n");
+		pr_err("Using controller programmed gain and offset\n");
 		tmdev->gain_offset_programmed = true;
 	} else {
 		tsens_slope_data = devm_kzalloc(&pdev->dev,
@@ -2207,23 +2207,23 @@ static int get_device_tree_data(struct platform_device *pdev,
 	if (rc) {
 		for (i = 0; i < tsens_num_sensors; i++)
 			tmdev->sensor[i].sensor_client_id = i;
-		pr_debug("Default client id mapping\n");
+		pr_err("Default client id mapping\n");
 	} else {
 		for (i = 0; i < tsens_num_sensors; i++)
 			tmdev->sensor[i].sensor_client_id = client_id[i];
-		pr_debug("Use specified client id mapping\n");
+		pr_err("Use specified client id mapping\n");
 	}
 
 	rc = of_property_read_u32_array(of_node,
 		"qcom,sensor-id", sensor_id, tsens_num_sensors);
 	if (rc) {
-		pr_debug("Default sensor id mapping\n");
+		pr_err("Default sensor id mapping\n");
 		for (i = 0; i < tsens_num_sensors; i++) {
 			tmdev->sensor[i].sensor_hw_num = i;
 			tmdev->sensor[i].sensor_sw_id = i;
 		}
 	} else {
-		pr_debug("Use specified sensor id mapping\n");
+		pr_err("Use specified sensor id mapping\n");
 		for (i = 0; i < tsens_num_sensors; i++) {
 			tmdev->sensor[i].sensor_hw_num = sensor_id[i];
 			tmdev->sensor[i].sensor_sw_id = i;
@@ -2233,10 +2233,10 @@ static int get_device_tree_data(struct platform_device *pdev,
 	rc = of_property_read_u32(of_node,
 			"qcom,cycle-monitor", &cycle_monitor);
 	if (rc) {
-		pr_debug("Default cycle completion monitor\n");
+		pr_err("Default cycle completion monitor\n");
 		tmdev->cycle_compltn_monitor = false;
 	} else {
-		pr_debug("Use specified cycle completion monitor\n");
+		pr_err("Use specified cycle completion monitor\n");
 		tmdev->cycle_compltn_monitor = true;
 		tmdev->cycle_compltn_monitor_val = cycle_monitor;
 	}
@@ -2244,10 +2244,10 @@ static int get_device_tree_data(struct platform_device *pdev,
 	rc = of_property_read_u32(of_node,
 			"qcom,wd-bark", &wd_bark);
 	if (rc) {
-		pr_debug("Default Watchdog bark\n");
+		pr_err("Default Watchdog bark\n");
 		tmdev->wd_bark = false;
 	} else {
-		pr_debug("Use specified Watchdog bark\n");
+		pr_err("Use specified Watchdog bark\n");
 		tmdev->wd_bark = true;
 		tmdev->wd_bark_val = wd_bark;
 	}
@@ -2309,11 +2309,11 @@ static int get_device_tree_data(struct platform_device *pdev,
 				"qcom,temp1-offset", temp1_calib_offset_factor,
 							tsens_num_sensors);
 	if (rc) {
-		pr_debug("Default temp1-offsets\n");
+		pr_err("Default temp1-offsets\n");
 		for (i = 0; i < tsens_num_sensors; i++)
 			tmdev->sensor[i].wa_temp1_calib_offset_factor = 0;
 	} else {
-		pr_debug("Use specific temp1-offsets\n");
+		pr_err("Use specific temp1-offsets\n");
 		for (i = 0; i < tsens_num_sensors; i++)
 			tmdev->sensor[i].wa_temp1_calib_offset_factor =
 						temp1_calib_offset_factor[i];
@@ -2328,11 +2328,11 @@ static int get_device_tree_data(struct platform_device *pdev,
 				"qcom,temp2-offset", temp2_calib_offset_factor,
 							tsens_num_sensors);
 	if (rc) {
-		pr_debug("Default temp2-offsets\n");
+		pr_err("Default temp2-offsets\n");
 		for (i = 0; i < tsens_num_sensors; i++)
 			tmdev->sensor[i].wa_temp2_calib_offset_factor = 0;
 	} else {
-		pr_debug("Use specific temp2-offsets\n");
+		pr_err("Use specific temp2-offsets\n");
 		for (i = 0; i < tsens_num_sensors; i++)
 			tmdev->sensor[i].wa_temp2_calib_offset_factor =
 						temp2_calib_offset_factor[i];
@@ -2448,7 +2448,7 @@ static int tsens_tm_probe(struct platform_device *pdev)
 
 	rc = create_tsens_mtc_sysfs(pdev);
 	if (rc < 0)
-		pr_debug("Cannot create create_tsens_mtc_sysfs %d\n", rc);
+		pr_err("Cannot create create_tsens_mtc_sysfs %d\n", rc);
 
 	return 0;
 fail:

@@ -564,7 +564,7 @@ static void end_power_clamp(void)
 	msleep(20);
 	if (bitmap_weight(cpu_clamping_mask, num_possible_cpus())) {
 		for_each_set_bit(i, cpu_clamping_mask, num_possible_cpus()) {
-			pr_debug("clamping thread for cpu %d alive, kill\n", i);
+			pr_err("clamping thread for cpu %d alive, kill\n", i);
 			thread = *per_cpu_ptr(powerclamp_thread, i);
 			kthread_stop(thread);
 		}

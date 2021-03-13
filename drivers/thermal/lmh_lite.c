@@ -252,7 +252,7 @@ static int lmh_disable_log(void)
 	ret = lmh_ctrl_qpmda(0);
 	if (ret)
 		goto disable_exit;
-	pr_debug("LMH hardware log disabled.\n");
+	pr_err("LMH hardware log disabled.\n");
 	lmh_data->log_enabled = 0;
 
 disable_exit:
@@ -270,7 +270,7 @@ static int lmh_enable_log(uint32_t delay, uint32_t reg_val)
 	ret = lmh_ctrl_qpmda(reg_val);
 	if (ret)
 		goto enable_exit;
-	pr_debug("LMH hardware log enabled[%u]. delay:%u\n", reg_val, delay);
+	pr_err("LMH hardware log enabled[%u]. delay:%u\n", reg_val, delay);
 	lmh_data->log_enabled = reg_val;
 
 enable_exit:
@@ -282,14 +282,14 @@ static void lmh_update(struct lmh_driver_data *lmh_dat,
 {
 	if (lmh_sensor->last_read_value > 0 && !(lmh_dat->intr_status_val
 		& BIT(lmh_sensor->sensor_sw_id))) {
-		pr_debug("Sensor:[%s] interrupt triggered\n",
+		pr_err("Sensor:[%s] interrupt triggered\n",
 			lmh_sensor->sensor_name);
 		trace_lmh_sensor_interrupt(lmh_sensor->sensor_name,
 			lmh_sensor->last_read_value);
 		lmh_dat->intr_status_val |= BIT(lmh_sensor->sensor_sw_id);
 	} else if (lmh_sensor->last_read_value == 0 && (lmh_dat->intr_status_val
 		& BIT(lmh_sensor->sensor_sw_id))) {
-		pr_debug("Sensor:[%s] interrupt clear\n",
+		pr_err("Sensor:[%s] interrupt clear\n",
 			lmh_sensor->sensor_name);
 		trace_lmh_sensor_interrupt(lmh_sensor->sensor_name,
 			lmh_sensor->last_read_value);
@@ -382,7 +382,7 @@ static void lmh_poll(struct work_struct *work)
 	lmh_read_and_update(lmh_dat);
 	if (!lmh_data->intr_status_val) {
 		lmh_data->intr_state = LMH_ISR_MONITOR;
-		pr_debug("Zero throttling. Re-enabling interrupt\n");
+		pr_err("Zero throttling. Re-enabling interrupt\n");
 		trace_lmh_event_call("Lmh Interrupt Clear");
 		enable_irq(lmh_data->irq_num);
 		goto poll_exit;
@@ -422,7 +422,7 @@ static irqreturn_t lmh_isr_thread(int irq, void *data)
 {
 	struct lmh_driver_data *lmh_dat = data;
 
-	pr_debug("LMH Interrupt triggered\n");
+	pr_err("LMH Interrupt triggered\n");
 	trace_lmh_event_call("Lmh Interrupt");
 
 	disable_irq_nosync(irq);
@@ -436,7 +436,7 @@ static irqreturn_t lmh_isr_thread(int irq, void *data)
 	lmh_dat->intr_state = LMH_ISR_POLLING;
 	if (!lmh_data->trim_err_disable) {
 		lmh_dat->intr_reg_val = readl_relaxed(lmh_dat->intr_addr);
-		pr_debug("Lmh hw interrupt:%d\n", lmh_dat->intr_reg_val);
+		pr_err("Lmh hw interrupt:%d\n", lmh_dat->intr_reg_val);
 		if (lmh_dat->intr_reg_val & BIT(lmh_dat->trim_err_offset)) {
 			trace_lmh_event_call("Lmh trim error");
 			lmh_trim_error();
@@ -446,7 +446,7 @@ static irqreturn_t lmh_isr_thread(int irq, void *data)
 	}
 	lmh_read_and_update(lmh_dat);
 	if (!lmh_dat->intr_status_val) {
-		pr_debug("LMH not throttling. Enabling interrupt\n");
+		pr_err("LMH not throttling. Enabling interrupt\n");
 		lmh_dat->intr_state = LMH_ISR_MONITOR;
 		trace_lmh_event_call("Lmh Zero throttle Interrupt Clear");
 		goto decide_next_action;
@@ -558,7 +558,7 @@ static void lmh_remove_sensors(void)
 	list_for_each_entry_safe(prev_sensor, curr_sensor, &lmh_sensor_list,
 		list_ptr) {
 		list_del(&prev_sensor->list_ptr);
-		pr_debug("Deregistering Sensor:[%s]\n",
+		pr_err("Deregistering Sensor:[%s]\n",
 			prev_sensor->sensor_name);
 		lmh_sensor_deregister(&prev_sensor->ops);
 		devm_kfree(lmh_data->dev, prev_sensor);
@@ -635,7 +635,7 @@ static int lmh_parse_sensor(struct lmh_sensor_info *sens_info)
 		goto sens_exit;
 	}
 	list_add_tail(&lmh_sensor->list_ptr, &lmh_sensor_list);
-	pr_debug("Registered sensor:[%s] driver\n", lmh_sensor->sensor_name);
+	pr_err("Registered sensor:[%s] driver\n", lmh_sensor->sensor_name);
 
 sens_exit:
 	if (ret)
@@ -741,7 +741,7 @@ static int lmh_set_level(struct lmh_device_ops *ops, int level)
 			(is_scm_armv8()) ? 8 : 7, level, ret);
 		return ret;
 	}
-	pr_debug("Device:[%s] Current level:%d\n", LMH_DEVICE, level);
+	pr_err("Device:[%s] Current level:%d\n", LMH_DEVICE, level);
 	lmh_dev->curr_level = level;
 
 	return ret;
@@ -1046,7 +1046,7 @@ static int lmh_debug_get_types(struct lmh_debug_ops *ops, bool is_read,
 		LMH_DEBUG_GET_TYPE, dest_buf, ret);
 	if (ret)
 		goto get_type_exit;
-	pr_debug("Total %s types:%d\n", (is_read) ? "read" : "config", size);
+	pr_err("Total %s types:%d\n", (is_read) ? "read" : "config", size);
 	if (is_read) {
 		lmh_data->debug_info.read_type = *buf = dest_buf;
 		lmh_data->debug_info.read_type_count = size;
@@ -1083,7 +1083,7 @@ static void lmh_voltage_scale_set(uint32_t voltage)
 	mutex_unlock(&scm_lmh_lock);
 	snprintf(trace_buf, MAX_TRACE_EVENT_MSG_LEN,
 		"DPM voltage scale %d mV", voltage);
-	pr_debug("%s\n", trace_buf);
+	pr_err("%s\n", trace_buf);
 	trace_lmh_event_call(trace_buf);
 }
 
@@ -1105,7 +1105,7 @@ static void evaluate_and_config_odcm(uint32_t rail_uV, unsigned long state)
 	case REGULATOR_EVENT_VOLTAGE_CHANGE:
 		if (!disable_odcm)
 			break;
-		pr_debug("Disable ODCM\n");
+		pr_err("Disable ODCM\n");
 		write_to_odcm(false);
 		lmh_data->odcm_enabled = false;
 		disable_odcm = false;
@@ -1117,14 +1117,14 @@ static void evaluate_and_config_odcm(uint32_t rail_uV, unsigned long state)
 			if (lmh_data->odcm_enabled)
 				break;
 			/* Enable ODCM before the voltage increases */
-			pr_debug("Enable ODCM for voltage %u mV\n", rail_mV);
+			pr_err("Enable ODCM for voltage %u mV\n", rail_mV);
 			write_to_odcm(true);
 			lmh_data->odcm_enabled = true;
 		} else {
 			if (!lmh_data->odcm_enabled)
 				break;
 			/* Disable ODCM after the voltage decreases */
-			pr_debug("Disable ODCM for voltage %u mV\n", rail_mV);
+			pr_err("Disable ODCM for voltage %u mV\n", rail_mV);
 			disable_odcm = true;
 		}
 		break;
@@ -1132,7 +1132,7 @@ static void evaluate_and_config_odcm(uint32_t rail_uV, unsigned long state)
 		disable_odcm = false;
 		if (prev_state == lmh_data->odcm_enabled)
 			break;
-		pr_debug("Reverting ODCM state to %s\n",
+		pr_err("Reverting ODCM state to %s\n",
 			prev_state ? "enabled" : "disabled");
 		write_to_odcm(prev_state);
 		lmh_data->odcm_enabled = prev_state;
@@ -1152,7 +1152,7 @@ static int lmh_voltage_change_notifier(struct notifier_block *nb_data,
 
 	if (event == REGULATOR_EVENT_VOLTAGE_CHANGE) {
 		/* Convert from uV to mV */
-		pr_debug("Received event POST_VOLTAGE_CHANGE\n");
+		pr_err("Received event POST_VOLTAGE_CHANGE\n");
 		voltage = ((unsigned long)data) / 1000;
 		if (change_needed == 1 &&
 			(last_voltage == voltage)) {
@@ -1171,15 +1171,15 @@ static int lmh_voltage_change_notifier(struct notifier_block *nb_data,
 		else
 			/* Going from high to low apply change after */
 			change_needed = 1;
-		pr_debug("Received event PRE_VOLTAGE_CHANGE\n");
-		pr_debug("max = %lu mV min = %lu mV previous = %lu mV\n",
+		pr_err("Received event PRE_VOLTAGE_CHANGE\n");
+		pr_err("max = %lu mV min = %lu mV previous = %lu mV\n",
 			change_data->max_uV / 1000, change_data->min_uV / 1000,
 			change_data->old_uV / 1000);
 
 		if (lmh_data->odcm_reg[0])
 			evaluate_and_config_odcm(change_data->max_uV, event);
 	} else if (event == REGULATOR_EVENT_ABORT_VOLTAGE_CHANGE) {
-		pr_debug("Received event ABORT_VOLTAGE_CHANGE\n");
+		pr_err("Received event ABORT_VOLTAGE_CHANGE\n");
 		if (lmh_data->odcm_reg[0])
 			evaluate_and_config_odcm(0, event);
 	}
@@ -1235,7 +1235,7 @@ static int lmh_debug_init(void)
 	int ret = 0;
 
 	if (lmh_check_tz_debug_cmds()) {
-		pr_debug("Debug commands not available.\n");
+		pr_err("Debug commands not available.\n");
 		return -ENODEV;
 	}
 
@@ -1274,7 +1274,7 @@ static int lmh_sensor_init(struct platform_device *pdev)
 		pr_err("Error getting device tree data. err:%d\n", ret);
 		goto init_exit;
 	}
-	pr_debug("LMH Sensor Init complete\n");
+	pr_err("LMH Sensor Init complete\n");
 
 init_exit:
 	up_write(&lmh_sensor_access);
