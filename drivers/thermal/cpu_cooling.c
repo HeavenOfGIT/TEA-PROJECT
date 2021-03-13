@@ -818,7 +818,7 @@ __cpufreq_cooling_register(struct device_node *np,
 
 	table = cpufreq_frequency_get_table(cpumask_first(clip_cpus));
 	if (!table) {
-		pr_debug("%s: CPUFreq table not found\n", __func__);
+		pr_err("%s: CPUFreq table not found\n", __func__);
 		return ERR_PTR(-EPROBE_DEFER);
 	}
 
@@ -890,7 +890,7 @@ __cpufreq_cooling_register(struct device_node *np,
 		if (!freq)
 			pr_warn("%s: table has duplicate entries\n", __func__);
 		else
-			pr_debug("%s: freq:%u KHz\n", __func__, freq);
+			pr_err("%s: freq:%u KHz\n", __func__, freq);
 	}
 
 	snprintf(dev_name, sizeof(dev_name), "thermal-cpufreq-%d",

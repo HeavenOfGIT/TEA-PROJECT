@@ -309,7 +309,7 @@ static int __update_sensor_thresholds(struct sensor_info *sensor)
 		}
 	}
 
-	pr_debug("sensor %d: Thresholds: max of low: %ld min of high: %ld\n",
+	pr_err("sensor %d: Thresholds: max of low: %ld min of high: %ld\n",
 			sensor->sensor_id, max_of_low_thresh,
 			min_of_high_thresh);
 
@@ -355,7 +355,7 @@ static int __update_sensor_thresholds(struct sensor_info *sensor)
 		goto update_done;
 	}
 
-	pr_debug("sensor %d: low: %d high: %d\n",
+	pr_err("sensor %d: low: %d high: %d\n",
 		sensor->sensor_id,
 		sensor->threshold_min, sensor->threshold_max);
 
@@ -531,7 +531,7 @@ static int tz_notify_trip(enum thermal_trip_type type, int temp, void *data)
 {
 	struct thermal_zone_device *tz = (struct thermal_zone_device *)data;
 
-	pr_debug("sensor %d tripped: type %d temp %d\n",
+	pr_err("sensor %d tripped: type %d temp %d\n",
 			tz->sensor.sensor_id, type, temp);
 
 	return 0;

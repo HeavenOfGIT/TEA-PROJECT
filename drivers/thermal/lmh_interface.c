@@ -362,7 +362,7 @@ void lmh_update_reading(struct lmh_sensor_ops *ops, int trip_val)
 		goto interrupt_exit;
 	}
 	down_write(&lmh_sensor->lock);
-	pr_debug("Sensor:[%s] intensity:%d\n", lmh_sensor->sensor_name,
+	pr_err("Sensor:[%s] intensity:%d\n", lmh_sensor->sensor_name,
 		trip_val);
 	lmh_evaluate_and_notify(lmh_sensor, trip_val);
 interrupt_exit:
@@ -580,7 +580,7 @@ int lmh_sensor_register(char *sensor_name, struct lmh_sensor_ops *ops)
 		goto register_exit;
 	}
 
-	pr_debug("Registered Sensor:[%s]\n", sensor_name);
+	pr_err("Registered Sensor:[%s]\n", sensor_name);
 
 register_exit:
 	up_write(&lmh_mon_access_lock);
@@ -592,7 +592,7 @@ register_exit:
 			, sensor_name);
 		return ret;
 	}
-	pr_debug("Registered Sensor:[%s]\n", sensor_name);
+	pr_err("Registered Sensor:[%s]\n", sensor_name);
 	return ret;
 }
 
@@ -609,7 +609,7 @@ static void lmh_sensor_remove(struct lmh_sensor_ops *ops)
 	thermal_zone_device_unregister(lmh_sensor->tzdev);
 	list_del(&lmh_sensor->list_ptr);
 	up_write(&lmh_sensor->lock);
-	pr_debug("Deregistered sensor:[%s]\n", lmh_sensor->sensor_name);
+	pr_err("Deregistered sensor:[%s]\n", lmh_sensor->sensor_name);
 	kfree(lmh_sensor);
 
 deregister_exit:
@@ -758,7 +758,7 @@ int lmh_set_dev_level(char *device_name, int curr_lvl)
 			curr_lvl, device_name, ret);
 		goto set_dev_exit;
 	}
-	pr_debug("Device:[%s] configured to level %d\n", device_name, curr_lvl);
+	pr_err("Device:[%s] configured to level %d\n", device_name, curr_lvl);
 	lmh_device->curr_level = curr_lvl;
 
 set_dev_exit:
@@ -793,7 +793,7 @@ int lmh_get_curr_level(char *device_name, int *val)
 		goto get_curr_level;
 	}
 	*val = lmh_device->curr_level;
-	pr_debug("Device:%s current level:%d\n", device_name, *val);
+	pr_err("Device:%s current level:%d\n", device_name, *val);
 
 get_curr_level:
 	if (lmh_device)
@@ -839,7 +839,7 @@ int lmh_device_register(char *device_name, struct lmh_device_ops *ops)
 		goto register_exit;
 	}
 
-	pr_debug("Registered Device:[%s] with %d levels\n", device_name,
+	pr_err("Registered Device:[%s] with %d levels\n", device_name,
 			lmh_device->max_level);
 
 register_exit:
@@ -858,7 +858,7 @@ static void lmh_device_remove(struct lmh_device_ops *ops)
 	}
 	down_write(&lmh_device->lock);
 	list_del(&lmh_device->list_ptr);
-	pr_debug("Deregistered device:[%s]\n", lmh_device->device_name);
+	pr_err("Deregistered device:[%s]\n", lmh_device->device_name);
 	kfree(lmh_device->levels);
 	up_write(&lmh_device->lock);
 	kfree(lmh_device);
@@ -924,7 +924,7 @@ static int lmh_parse_and_extract(const char __user *user_buf, size_t count,
 			ret = -ENOMEM;
 			goto dfs_cfg_write_exit;
 		}
-		pr_debug("Input:%s data_ct:%d\n", curr_ptr, data_ct);
+		pr_err("Input:%s data_ct:%d\n", curr_ptr, data_ct);
 		for (i = 0, token = (char *)curr_ptr; token && (i < data_ct);
 			i++) {
 			token = strnchr(token, next_line - token, ' ');

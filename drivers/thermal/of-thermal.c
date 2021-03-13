@@ -880,7 +880,7 @@ int __init of_parse_thermal_zones(void)
 
 	np = of_find_node_by_name(NULL, "thermal-zones");
 	if (!np) {
-		pr_debug("unable to find thermal zones\n");
+		pr_err("unable to find thermal zones\n");
 		return 0; /* Run successfully on systems without thermal DT */
 	}
 
@@ -967,7 +967,7 @@ void of_thermal_destroy_zones(void)
 
 	np = of_find_node_by_name(NULL, "thermal-zones");
 	if (!np) {
-		pr_debug("unable to find thermal zones\n");
+		pr_err("unable to find thermal zones\n");
 		return;
 	}
 

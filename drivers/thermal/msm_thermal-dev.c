@@ -51,7 +51,7 @@ static int msm_thermal_ioctl_open(struct inode *node, struct file *filep)
 
 static int msm_thermal_ioctl_release(struct inode *node, struct file *filep)
 {
-	pr_debug("%s: IOCTL: release\n", KBUILD_MODNAME);
+	pr_err("%s: IOCTL: release\n", KBUILD_MODNAME);
 	return 0;
 }
 
@@ -288,7 +288,7 @@ static long msm_thermal_ioctl_process(struct file *filep, unsigned int cmd,
 	long ret = 0;
 	struct msm_thermal_ioctl query;
 
-	pr_debug("%s: IOCTL: processing cmd:%u\n", KBUILD_MODNAME, cmd);
+	pr_err("%s: IOCTL: processing cmd:%u\n", KBUILD_MODNAME, cmd);
 
 	ret = validate_and_copy(&cmd, &arg, &query);
 	if (ret)

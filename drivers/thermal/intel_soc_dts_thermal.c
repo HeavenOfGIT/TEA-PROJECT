@@ -35,7 +35,7 @@ static struct intel_soc_dts_sensors *soc_dts;
 
 static irqreturn_t soc_irq_thread_fn(int irq, void *dev_data)
 {
-	pr_debug("proc_thermal_interrupt\n");
+	pr_err("proc_thermal_interrupt\n");
 	intel_soc_dts_iosf_interrupt_handler(soc_dts);
 
 	return IRQ_HANDLED;
