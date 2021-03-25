@@ -2240,9 +2240,9 @@ int smblib_dp_dm(struct smb_charger *chg, int val)
 							SW_QC3_VOTER))
 			chg->usb_icl_delta_ua = 0;
 
-		chg->usb_icl_delta_ua += 100000;
+		chg->usb_icl_delta_ua += 300000;
 		vote(chg->usb_icl_votable, SW_QC3_VOTER, true,
-						target_icl_ua - 100000);
+						target_icl_ua - 300000);
 		smblib_dbg(chg, PR_PARALLEL, "ICL DOWN ICL=%d reduction=%d\n",
 				target_icl_ua, chg->usb_icl_delta_ua);
 		break;
@@ -3444,9 +3444,6 @@ void asus_batt_RTC_work(struct work_struct *dat)
  * PARALLEL PSY GETTERS *
  ************************/
 #ifdef CONFIG_MACH_ASUS_X00T
-#define ICL_475mA	0x12
-#define ICL_500mA	0x13
-#define ICL_950mA	0x26
 #define ICL_1000mA	0x28
 #define ICL_1425mA	0x39
 #define ICL_1500mA	0x3C
@@ -3720,12 +3717,6 @@ void jeita_rule(void)
 		__func__,state, health_type[bat_health], bat_temp, bat_volt,bat_capacity, ICL_reg, FV_reg,BR_countrycode);
 
 	switch (state) {
-	case JEITA_STATE_LESS_THAN_0:
-		charging_enable = EN_BAT_CHG_EN_COMMAND_FALSE;
-		FV_CFG_reg_value = SMBCHG_FLOAT_VOLTAGE_VALUE_4P357;
-		FCC_reg_value = SMBCHG_FAST_CHG_CURRENT_VALUE_850MA;
-		printk("%s: temperature < 0\n", __func__);
-		break;
 	case JEITA_STATE_RANGE_0_to_100:
 		charging_enable = EN_BAT_CHG_EN_COMMAND_TRUE;
 		FV_CFG_reg_value = SMBCHG_FLOAT_VOLTAGE_VALUE_4P350;                   //reg=1070
@@ -3964,7 +3955,7 @@ void asus_chg_flow_work(struct work_struct *work)
 			printk("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n", __func__);
 		printk("asus_chg_flow_work usbmode_USBIN_1_cc=0x%x\n",USBIN_1_cc);
 #endif
-			set_icl = ICL_500mA;
+			set_icl = ICL_3000mA;
 		rc = smblib_masked_write(smbchg_dev, USBIN_CURRENT_LIMIT_CFG_REG,
 			USBIN_CURRENT_LIMIT_MASK, set_icl);
 		if (rc < 0)
@@ -3974,7 +3965,7 @@ void asus_chg_flow_work(struct work_struct *work)
 		break;
 	case CDP_CHARGER_BIT:
 		printk("asus_chg_flow_work enter CDP_CHARGER_BIT\n");
-			set_icl = ICL_1500mA;
+			set_icl = ICL_3000mA;
 		rc = smblib_masked_write(smbchg_dev, USBIN_CURRENT_LIMIT_CFG_REG,     //reg=1370   bit7-bit0=USBIN_CURRENT_LIMIT
 			USBIN_CURRENT_LIMIT_MASK, set_icl);
 		if (rc < 0)
@@ -3991,7 +3982,7 @@ void asus_chg_flow_work(struct work_struct *work)
 		break;
 	case OCP_CHARGER_BIT:
 		printk("asus_chg_flow_work entert OCP_CHARGER_BIT");
-			set_icl = ICL_1000mA;                                                                                                                                 //reg=1370 bit7-bit0
+			set_icl = ICL_3000mA;                                                                                                                                 //reg=1370 bit7-bit0
 		rc = smblib_masked_write(smbchg_dev, USBIN_CURRENT_LIMIT_CFG_REG,
 			USBIN_CURRENT_LIMIT_MASK, set_icl);
 		if (rc < 0)
@@ -4024,7 +4015,7 @@ void asus_chg_flow_work(struct work_struct *work)
 			printk("%s: Couldn't read fast_CURRENT_LIMIT_CFG_REG\n", __func__);
 		printk("asus_chg_flow_work dcp_USBIN_1_cc=0x%x\n",USBIN_1_cc);
 
-		set_icl = ICL_1000mA;                                                                                                                                 //reg=1370 bit7-bit0
+		set_icl = ICL_3000mA;                                                                                                                                 //reg=1370 bit7-bit0
 		rc = smblib_masked_write(smbchg_dev, USBIN_CURRENT_LIMIT_CFG_REG,
 			USBIN_CURRENT_LIMIT_MASK, set_icl);
 		if (rc < 0)
@@ -4151,28 +4142,28 @@ void asus_adapter_adc_work(struct work_struct *work)
 #endif
 	switch (ASUS_ADAPTER_ID) {
 	case ASUS_750K:
-			usb_max_current = ICL_2000mA;
+			usb_max_current = ICL_3000mA;
 		break;
 	case ASUS_200K:
-			usb_max_current = ICL_2000mA;
+			usb_max_current = ICL_3000mA;
 		break;
 	case PB:
-			usb_max_current = ICL_2000mA;
+			usb_max_current = ICL_3000mA;
 		break;
 	case OTHERS:
 		if(BR_countrycode == COUNTRY_BR || BR_countrycode == COUNTRY_IN)
 			{
-			usb_max_current = ICL_2000mA;
+			usb_max_current = ICL_3000mA;
 			printk("country  BR or IN \n");
 			}
 		else
 			{
 			printk("ASUS_ADAPTER_ID  OTHERS \n");
-			usb_max_current = ICL_1000mA;
+			usb_max_current = ICL_3000mA;
 			}
 		break;
 	case ADC_NOT_READY:
-		usb_max_current = ICL_1000mA;
+		usb_max_current = ICL_3000mA;
 		break;
 	}
 	rc = smblib_set_usb_suspend(smbchg_dev, 0);
@@ -4236,12 +4227,12 @@ void asus_insertion_initial_settings(struct smb_charger *chg)
 #endif
 	CHG_DBG("%s: start\n", __func__);
 //No.1
-	rc = smblib_write(chg, PRE_CHARGE_CURRENT_CFG_REG, 0x06);                                        //reg=1060    0x03   75mA  gaiwei  0x06  150mA
+	rc = smblib_write(chg, PRE_CHARGE_CURRENT_CFG_REG, 0x78);                                        //reg=1060    0x03   75mA  gaiwei  0x06  150mA
 	if (rc < 0) {
 		dev_err(chg->dev, "Couldn't set default PRE_CHARGE_CURRENT_CFG_REG rc=%d\n", rc);
 	}
 //No.2
-	rc = smblib_write(chg, FAST_CHARGE_CURRENT_CFG_REG, 0x28);                                      //reg=1061      0x38 1475mA  gaiwei  0x28 1000mA
+	rc = smblib_write(chg, FAST_CHARGE_CURRENT_CFG_REG, 0x78);                                      //reg=1061      0x38 1475mA  gaiwei  0x28 1000mA
 	if (rc < 0) {
 		dev_err(chg->dev, "Couldn't set default FAST_CHARGE_CURRENT_CFG_REG rc=%d\n", rc);
 	}
@@ -4275,7 +4266,7 @@ void asus_insertion_initial_settings(struct smb_charger *chg)
 		dev_err(chg->dev, "Couldn't set default USBIN_ADAPTER_ALLOW_CFG_REG rc=%d\n", rc);
 	}
 //No.8
-	rc = smblib_write(chg, CHGR_CFG2_REG, 0x40);                        //reg=1051   01000000      bit6=Charge Enable Polarity      1 = Active low (0: enable charging)
+	rc = smblib_write(chg, CHGR_CFG2_REG, 0x78);                        //reg=1051   01000000      bit6=Charge Enable Polarity      1 = Active low (0: enable charging)
 	if (rc < 0) {
 		dev_err(chg->dev, "Couldn't set default CHGR_CFG2_REG rc=%d\n", rc);
 	}
@@ -4621,7 +4612,6 @@ irqreturn_t smblib_handle_usb_plugin(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
-#define USB_WEAK_INPUT_UA	1400000
 #define ICL_CHANGE_DELAY_MS	1000
 irqreturn_t smblib_handle_icl_change(int irq, void *data)
 {
@@ -4870,15 +4860,15 @@ static void smblib_force_legacy_icl(struct smb_charger *chg, int pst)
 		/*
 		 * USB_PSY will vote to increase the current to 500/900mA once
 		 * enumeration is done. Ensure that USB_PSY has at least voted
-		 * for 100mA before releasing the LEGACY_UNKNOWN vote
+		 * for 1000mA before releasing the LEGACY_UNKNOWN vote
 		 */
 		if (!is_client_vote_enabled(chg->usb_icl_votable,
 								USB_PSY_VOTER))
-			vote(chg->usb_icl_votable, USB_PSY_VOTER, true, 100000);
+			vote(chg->usb_icl_votable, USB_PSY_VOTER, true, 3000000);
 		vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, false, 0);
 		break;
 	case POWER_SUPPLY_TYPE_USB_CDP:
-		vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, 1500000);
+		vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, 3000000);
 		break;
 	case POWER_SUPPLY_TYPE_USB_DCP:
 		typec_mode = smblib_get_prop_typec_mode(chg);
@@ -4902,7 +4892,7 @@ static void smblib_force_legacy_icl(struct smb_charger *chg, int pst)
 		 * limit ICL to 100mA, the USB driver will enumerate to check
 		 * if this is a SDP and appropriately set the current
 		 */
-		vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, 100000);
+		vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, 3000000);
 		break;
 	case POWER_SUPPLY_TYPE_USB_HVDCP:
 	case POWER_SUPPLY_TYPE_USB_HVDCP_3:
@@ -4910,7 +4900,7 @@ static void smblib_force_legacy_icl(struct smb_charger *chg, int pst)
 		break;
 	default:
 		smblib_err(chg, "Unknown APSD %d; forcing 500mA\n", pst);
-		vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, 500000);
+		vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, 3000000);
 		break;
 	}
 }
@@ -5420,7 +5410,7 @@ static void smblib_handle_rp_change(struct smb_charger *chg, int typec_mode)
 	 */
 	if (apsd->pst == POWER_SUPPLY_TYPE_USB_FLOAT &&
 		get_client_vote(chg->usb_icl_votable,
-			LEGACY_UNKNOWN_VOTER) <= 100000)
+			LEGACY_UNKNOWN_VOTER) <= 300000)
 		return;
 
 	/*
@@ -5597,7 +5587,7 @@ irqreturn_t smblib_handle_switcher_power_ok(int irq, void *data)
 						WEAK_CHARGER_VOTER)) {
 			smblib_err(chg,
 				"Weak charger detected: voting %dmA ICL\n",
-				*chg->weak_chg_icl_ua / 1000);
+				*chg->weak_chg_icl_ua / 1500);
 			vote(chg->usb_icl_votable, WEAK_CHARGER_VOTER,
 					true, *chg->weak_chg_icl_ua);
 			/*
