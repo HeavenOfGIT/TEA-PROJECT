@@ -13,10 +13,10 @@ jobs:
             ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
             dpkg-reconfigure --frontend noninteractive tzdata
             python3 -m pip  install networkx
-            git config --global user.name "Takanashi-Hikari"
+            git config --global user.name "iocode"
             git config --global user.email "firsname76@gmail.com"
-            git clone https://$GITHUB_TOKEN@github.com/Takanashi-Hikari/TEA-PROJECT -b 42 && cd TEA-PROJECT
-            curl https://raw.githubusercontent.com/Takanashi-Hikari/myscripts/master/MASTER.sh > run.sh
+            git clone https://$GITHUB_TOKEN@github.com/vcyzteen/TEA-PROJECT -b FRESH && cd TEA-PROJECT
+            curl https://raw.githubusercontent.com/vcyzteen/myscripts/master/MASTER.sh > run.sh
             source run.sh
           no_output_timeout : 5h
 workflows:
