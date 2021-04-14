@@ -100,7 +100,7 @@
 #define READ_CONV_FACTOR(_node, _key, _val, _ret, _dest) do { \
 		_ret = of_property_read_u32(_node, _key, &_val); \
 		if (_ret) { \
-			pr_debug("Error reading key:%s. err:%d\n", _key, _ret); \
+			pr_err("Error reading key:%s. err:%d\n", _key, _ret); \
 			goto bcl_dev_exit; \
 		} \
 		_dest = _val; \
@@ -109,7 +109,7 @@
 #define READ_OPTIONAL_PROP(_node, _key, _val, _ret, _dest) do { \
 		_ret = of_property_read_u32(_node, _key, &_val); \
 		if (_ret && _ret != -EINVAL) { \
-			pr_debug("Error reading key:%s. err:%d\n", _key, _ret); \
+			pr_err("Error reading key:%s. err:%d\n", _key, _ret); \
 			goto bcl_dev_exit; \
 		} else if (!_ret) { \
 			_dest = _val; \
@@ -177,13 +177,13 @@ static int bcl_read_multi_register(int16_t reg_offset, uint8_t *data, int len)
 	int  ret = 0, trace_len = 0;
 
 	if (!bcl_perph) {
-		pr_debug("BCL device not initialized\n");
+		pr_err("BCL device not initialized\n");
 		return -EINVAL;
 	}
 	ret = regmap_bulk_read(bcl_perph->regmap,
 			       (bcl_perph->base_addr + reg_offset), data, len);
 	if (ret < 0) {
-		pr_debug("Error reading register %d. err:%d", reg_offset, ret);
+		pr_err("Error reading register %d. err:%d", reg_offset, ret);
 		return ret;
 	}
 	while (trace_len < len) {
@@ -208,12 +208,12 @@ static int bcl_write_general_register(int16_t reg_offset,
 	uint8_t *write_buf = &data;
 
 	if (!bcl_perph) {
-		pr_debug("BCL device not initialized\n");
+		pr_err("BCL device not initialized\n");
 		return -EINVAL;
 	}
 	ret = regmap_write(bcl_perph->regmap, (base + reg_offset), *write_buf);
 	if (ret < 0) {
-		pr_debug("Error reading register %d. err:%d", reg_offset, ret);
+		pr_err("Error reading register %d. err:%d", reg_offset, ret);
 		return ret;
 	}
 	pr_debug("wrote 0x%02x to 0x%04x\n", data, base + reg_offset);
@@ -357,7 +357,7 @@ static int bcl_set_high_ibat(int thresh_value)
 	ret = bcl_write_register((bcl_perph_version == BCL_PMI8994) ?
 		BCL_IBAT_TRIP : BCL_8998_IBAT_HIGH, val);
 	if (ret) {
-		pr_debug("Error accessing BCL peripheral. err:%d\n", ret);
+		pr_err("Error accessing BCL peripheral. err:%d\n", ret);
 		return ret;
 	}
 	bcl_perph->param[BCL_PARAM_CURRENT].high_trip = thresh_value;
@@ -368,7 +368,7 @@ static int bcl_set_high_ibat(int thresh_value)
 		val = (int8_t)too_high_thresh;
 		ret = bcl_write_register(BCL_8998_IBAT_TOO_HIGH, val);
 		if (ret) {
-			pr_debug("Error accessing BCL peripheral. err:%d\n", ret);
+			pr_err("Error accessing BCL peripheral. err:%d\n", ret);
 			return ret;
 		}
 	}
@@ -410,14 +410,14 @@ static int bcl_set_low_vbat(int thresh_value)
 	ret = bcl_write_register((bcl_perph_version == BCL_PMI8994)
 		? BCL_VBAT_TRIP : BCL_8998_VBAT_ADC_LOW, val);
 	if (ret) {
-		pr_debug("Error accessing BCL peripheral. err:%d\n", ret);
+		pr_err("Error accessing BCL peripheral. err:%d\n", ret);
 		return ret;
 	}
 	if (bcl_perph_version == BCL_PMI8998) {
 		ret = bcl_write_register(BCL_8998_VBAT_COMP_LOW,
 			BCL_VBAT_LOW_THRESHOLD);
 		if (ret) {
-			pr_debug("Error accessing BCL peripheral. err:%d\n", ret);
+			pr_err("Error accessing BCL peripheral. err:%d\n", ret);
 			return ret;
 		}
 		pr_debug("Setting Vbat low comparator threshold:0x%x.\n",
@@ -425,7 +425,7 @@ static int bcl_set_low_vbat(int thresh_value)
 		ret = bcl_write_register(BCL_8998_VBAT_COMP_TLOW,
 			BCL_VBAT_TLOW_THRESHOLD);
 		if (ret) {
-			pr_debug("Error accessing BCL peripheral. err:%d\n", ret);
+			pr_err("Error accessing BCL peripheral. err:%d\n", ret);
 			return ret;
 		}
 		pr_debug("Setting Vbat too low comparator threshold:0x%x.\n",
@@ -462,12 +462,12 @@ static void bcl_lmh_dcvs_enable(void)
 	dmac_flush_range(payload, (void *)payload + 5 * (sizeof(uint32_t)));
 	if (scm_call2(SCM_SIP_FNID(SCM_SVC_LMH, LMH_DCVSH),
 			&desc_arg))
-		pr_debug("Error enabling LMH BCL monitoringfor cluster0\n");
+		pr_err("Error enabling LMH BCL monitoringfor cluster0\n");
 
 	desc_arg.args[3] = LMH_CLUSTER_1;
 	if (scm_call2(SCM_SIP_FNID(SCM_SVC_LMH, LMH_DCVSH),
 			&desc_arg))
-		pr_debug("Error enabling LMH BCL monitoringfor cluster1\n");
+		pr_err("Error enabling LMH BCL monitoringfor cluster1\n");
 
 	kfree(payload);
 }
@@ -556,7 +556,7 @@ static int bcl_read_ibat_high_trip(int *thresh_value)
 	ret = bcl_read_register((bcl_perph_version == BCL_PMI8994) ?
 		BCL_IBAT_TRIP : BCL_8998_IBAT_HIGH, &val);
 	if (ret) {
-		pr_debug("BCL register read error. err:%d\n", ret);
+		pr_err("BCL register read error. err:%d\n", ret);
 		ret = 0;
 		val = bcl_perph->param[BCL_PARAM_CURRENT].high_trip;
 		*thresh_value = (int)val;
@@ -586,7 +586,7 @@ static int bcl_read_vbat_low_trip(int *thresh_value)
 			? BCL_VBAT_TRIP	: BCL_8998_VBAT_ADC_LOW,
 			&val);
 	if (ret) {
-		pr_debug("BCL register read error. err:%d\n", ret);
+		pr_err("BCL register read error. err:%d\n", ret);
 		ret = 0;
 		*thresh_value = bcl_perph->param[BCL_PARAM_VOLTAGE].low_trip;
 	} else {
@@ -615,7 +615,7 @@ static int bcl_clear_vbat_min(void)
 		ret = bcl_write_register(BCL_8998_MAX_MIN_CLR,
 			BIT(BCL_8998_VBAT_MIN_CLR));
 	if (ret)
-		pr_debug("Error in clearing vbat min reg. err:%d", ret);
+		pr_err("Error in clearing vbat min reg. err:%d", ret);
 
 	return ret;
 }
@@ -630,7 +630,7 @@ static int bcl_clear_ibat_max(void)
 		ret = bcl_write_register(BCL_8998_MAX_MIN_CLR,
 			BIT(BCL_8998_IBAT_MAX_CLR));
 	if (ret)
-		pr_debug("Error in clearing ibat max reg. err:%d", ret);
+		pr_err("Error in clearing ibat max reg. err:%d", ret);
 
 	return ret;
 }
@@ -647,7 +647,7 @@ static int bcl_read_ibat_max(int *adc_value)
 			: BCL_8998_IBAT_MAX, val,
 			VAL_CP_REG_BUF_LEN);
 		if (ret) {
-			pr_debug("BCL register read error. err:%d\n", ret);
+			pr_err("BCL register read error. err:%d\n", ret);
 			goto bcl_read_exit;
 		}
 	} while (val[VAL_REG_BUF_OFFSET] != val[VAL_CP_REG_BUF_OFFSET]
@@ -678,7 +678,7 @@ static int bcl_read_vbat_min(int *adc_value)
 			: BCL_8998_VBAT_MIN, val,
 			VAL_CP_REG_BUF_LEN);
 		if (ret) {
-			pr_debug("BCL register read error. err:%d\n", ret);
+			pr_err("BCL register read error. err:%d\n", ret);
 			goto bcl_read_exit;
 		}
 	} while (val[VAL_REG_BUF_OFFSET] != val[VAL_CP_REG_BUF_OFFSET]
@@ -709,7 +709,7 @@ static int bcl_read_ibat(int *adc_value)
 			: BCL_8998_IBAT_VALUE, val,
 			VAL_CP_REG_BUF_LEN);
 		if (ret) {
-			pr_debug("BCL register read error. err:%d\n", ret);
+			pr_err("BCL register read error. err:%d\n", ret);
 			goto bcl_read_exit;
 		}
 	} while (val[VAL_REG_BUF_OFFSET] != val[VAL_CP_REG_BUF_OFFSET]
@@ -740,7 +740,7 @@ static int bcl_read_vbat(int *adc_value)
 			BCL_8998_VBAT_VALUE, val,
 			VAL_CP_REG_BUF_LEN);
 		if (ret) {
-			pr_debug("BCL register read error. err:%d\n", ret);
+			pr_err("BCL register read error. err:%d\n", ret);
 			goto bcl_read_exit;
 		}
 	} while (val[VAL_REG_BUF_OFFSET] != val[VAL_CP_REG_BUF_OFFSET]
@@ -768,18 +768,18 @@ static void bcl_poll_ibat_low(struct work_struct *work)
 	trace_bcl_hw_event("ibat poll low. Enter");
 	mutex_lock(&perph_data->state_trans_lock);
 	if (perph_data->state != BCL_PARAM_POLLING) {
-		pr_debug("Invalid ibat state %d\n", perph_data->state);
+		pr_err("Invalid ibat state %d\n", perph_data->state);
 		goto exit_ibat;
 	}
 
 	ret = perph_data->read_max(&val);
 	if (ret) {
-		pr_debug("Error in reading ibat. err:%d", ret);
+		pr_err("Error in reading ibat. err:%d", ret);
 		goto reschedule_ibat;
 	}
 	ret = perph_data->clear_max();
 	if (ret)
-		pr_debug("Error clearing max ibat reg. err:%d\n", ret);
+		pr_err("Error clearing max ibat reg. err:%d\n", ret);
 	if (val <= perph_data->low_trip) {
 		pr_debug("Ibat reached low clear trip. ibat:%d\n", val);
 		trace_bcl_hw_state_event("Polling to Monitor. Ibat[uA]:", val);
@@ -799,8 +799,7 @@ exit_ibat:
 
 reschedule_ibat:
 	mutex_unlock(&perph_data->state_trans_lock);
-		queue_delayed_work(system_power_efficient_wq,
-		        &perph_data->poll_work,
+	schedule_delayed_work(&perph_data->poll_work,
 		msecs_to_jiffies(perph_data->polling_delay_ms));
 	trace_bcl_hw_event("ibat poll low. Exit");
 	return;
@@ -815,18 +814,18 @@ static void bcl_poll_vbat_high(struct work_struct *work)
 	trace_bcl_hw_event("vbat poll high. Enter");
 	mutex_lock(&perph_data->state_trans_lock);
 	if (perph_data->state != BCL_PARAM_POLLING) {
-		pr_debug("Invalid vbat state %d\n", perph_data->state);
+		pr_err("Invalid vbat state %d\n", perph_data->state);
 		goto exit_vbat;
 	}
 
 	ret = perph_data->read_max(&val);
 	if (ret) {
-		pr_debug("Error in reading vbat. err:%d", ret);
+		pr_err("Error in reading vbat. err:%d", ret);
 		goto reschedule_vbat;
 	}
 	ret = perph_data->clear_max();
 	if (ret)
-		pr_debug("Error clearing min vbat reg. err:%d\n", ret);
+		pr_err("Error clearing min vbat reg. err:%d\n", ret);
 	if (val >= perph_data->high_trip) {
 		pr_debug("Vbat reached high clear trip. vbat:%d\n", val);
 		trace_bcl_hw_state_event("Polling to Monitor. vbat[uV]:", val);
@@ -846,8 +845,7 @@ exit_vbat:
 
 reschedule_vbat:
 	mutex_unlock(&perph_data->state_trans_lock);
-		queue_delayed_work(system_power_efficient_wq,
-		        &perph_data->poll_work,
+	schedule_delayed_work(&perph_data->poll_work,
 		msecs_to_jiffies(perph_data->polling_delay_ms));
 	trace_bcl_hw_event("vbat poll high. Exit");
 	return;
@@ -864,12 +862,12 @@ static irqreturn_t bcl_handle_ibat(int irq, void *data)
 	if (perph_data->state == BCL_PARAM_MONITOR) {
 		ret = perph_data->read_max(&perph_data->trip_val);
 		if (ret) {
-			pr_debug("Error reading max/min reg. err:%d\n", ret);
+			pr_err("Error reading max/min reg. err:%d\n", ret);
 			goto exit_intr;
 		}
 		ret = perph_data->clear_max();
 		if (ret)
-			pr_debug("Error clearing max/min reg. err:%d\n", ret);
+			pr_err("Error clearing max/min reg. err:%d\n", ret);
 		thresh_value = perph_data->high_trip;
 		convert_adc_to_ibat_val(&thresh_value);
 		/* Account threshold trip from PBS threshold for dead time */
@@ -890,8 +888,7 @@ static irqreturn_t bcl_handle_ibat(int irq, void *data)
 				perph_data->trip_val);
 		perph_data->ops.notify(perph_data->param_data,
 			perph_data->trip_val, BCL_HIGH_TRIP);
-			queue_delayed_work(system_power_efficient_wq,
-		                &perph_data->poll_work,
+		schedule_delayed_work(&perph_data->poll_work,
 			msecs_to_jiffies(perph_data->polling_delay_ms));
 	} else {
 		pr_debug("Ignoring interrupt\n");
@@ -914,12 +911,12 @@ static irqreturn_t bcl_handle_vbat(int irq, void *data)
 	if (perph_data->state == BCL_PARAM_MONITOR) {
 		ret = perph_data->read_max(&perph_data->trip_val);
 		if (ret) {
-			pr_debug("Error reading max/min reg. err:%d\n", ret);
+			pr_err("Error reading max/min reg. err:%d\n", ret);
 			goto exit_intr;
 		}
 		ret = perph_data->clear_max();
 		if (ret)
-			pr_debug("Error clearing max/min reg. err:%d\n", ret);
+			pr_err("Error clearing max/min reg. err:%d\n", ret);
 		thresh_value = perph_data->low_trip;
 		convert_adc_to_vbat_val(&thresh_value);
 		if (perph_data->trip_val > thresh_value) {
@@ -938,8 +935,7 @@ static irqreturn_t bcl_handle_vbat(int irq, void *data)
 				perph_data->trip_val);
 		perph_data->ops.notify(perph_data->param_data,
 			perph_data->trip_val, BCL_LOW_TRIP);
-			queue_delayed_work(system_power_efficient_wq,
-		                &perph_data->poll_work,
+		schedule_delayed_work(&perph_data->poll_work,
 			msecs_to_jiffies(perph_data->polling_delay_ms));
 	} else {
 		pr_debug("Ignoring interrupt\n");
@@ -977,14 +973,14 @@ static int bcl_get_devicetree_data(struct platform_device *pdev)
 	/* Register SPMI peripheral interrupt */
 	irq_num = platform_get_irq_byname(pdev, BCL_VBAT_INT_NAME);
 	if (irq_num < 0) {
-		pr_debug("Invalid vbat IRQ\n");
+		pr_err("Invalid vbat IRQ\n");
 		ret = -ENXIO;
 		goto bcl_dev_exit;
 	}
 	bcl_perph->param[BCL_PARAM_VOLTAGE].irq_num = irq_num;
 	irq_num = platform_get_irq_byname(pdev, BCL_IBAT_INT_NAME);
 	if (irq_num < 0) {
-		pr_debug("Invalid ibat IRQ\n");
+		pr_err("Invalid ibat IRQ\n");
 		ret = -ENXIO;
 		goto bcl_dev_exit;
 	}
@@ -1048,14 +1044,14 @@ static int bcl_calibrate(void)
 
 	ret = bcl_read_register(BCL_I_SENSE_SRC, &i_src);
 	if (ret) {
-		pr_debug("Error reading current sense reg. err:%d\n", ret);
+		pr_err("Error reading current sense reg. err:%d\n", ret);
 		goto bcl_cal_exit;
 	}
 
 	ret = bcl_read_register((i_src & 0x01) ? BCL_I_GAIN_RSENSE
 		: BCL_I_GAIN_BATFET, &val);
 	if (ret) {
-		pr_debug("Error reading %s current gain. err:%d\n",
+		pr_err("Error reading %s current gain. err:%d\n",
 			(i_src & 0x01) ? "rsense" : "batfet", ret);
 		goto bcl_cal_exit;
 	}
@@ -1063,14 +1059,14 @@ static int bcl_calibrate(void)
 	ret = bcl_read_register((i_src & 0x01) ? BCL_I_OFFSET_RSENSE
 		: BCL_I_OFFSET_BATFET, &val);
 	if (ret) {
-		pr_debug("Error reading %s current offset. err:%d\n",
+		pr_err("Error reading %s current offset. err:%d\n",
 			(i_src & 0x01) ? "rsense" : "batfet", ret);
 		goto bcl_cal_exit;
 	}
 	bcl_perph->param[BCL_PARAM_CURRENT].offset = val;
 	ret = bcl_read_register(BCL_V_GAIN_BAT, &val);
 	if (ret) {
-		pr_debug("Error reading vbat offset. err:%d\n", ret);
+		pr_err("Error reading vbat offset. err:%d\n", ret);
 		goto bcl_cal_exit;
 	}
 	bcl_perph->param[BCL_PARAM_VOLTAGE].gain = val;
@@ -1103,7 +1099,7 @@ static void power_supply_callback(struct power_supply *psy)
 		trace_bcl_hw_event("Recalibrate callback");
 		ret = bcl_calibrate();
 		if (ret)
-			pr_debug("Could not read calibration values. err:%d",
+			pr_err("Could not read calibration values. err:%d",
 				ret);
 	}
 }
@@ -1165,7 +1161,7 @@ static int bcl_update_data(void)
 		BCL_PARAM_VOLTAGE, &bcl_perph->param[BCL_PARAM_VOLTAGE].ops,
 		"vbat");
 	if (!bcl_perph->param[BCL_PARAM_VOLTAGE].param_data) {
-		pr_debug("register Vbat failed.\n");
+		pr_err("register Vbat failed.\n");
 		ret = -ENODEV;
 		goto update_data_exit;
 	}
@@ -1173,7 +1169,7 @@ static int bcl_update_data(void)
 		BCL_PARAM_CURRENT, &bcl_perph->param[BCL_PARAM_CURRENT].ops,
 		"ibat");
 	if (!bcl_perph->param[BCL_PARAM_CURRENT].param_data) {
-		pr_debug("register Ibat failed.\n");
+		pr_err("register Ibat failed.\n");
 		ret = -ENODEV;
 		goto update_data_exit;
 	}
@@ -1196,7 +1192,7 @@ static int bcl_probe(struct platform_device *pdev)
 	bcl_perph = devm_kzalloc(&pdev->dev, sizeof(struct bcl_device),
 			GFP_KERNEL);
 	if (!bcl_perph) {
-		pr_debug("Memory alloc failed\n");
+		pr_err("Memory alloc failed\n");
 		return -ENOMEM;
 	}
 	bcl_perph->regmap = dev_get_regmap(pdev->dev.parent, NULL);
@@ -1209,7 +1205,7 @@ static int bcl_probe(struct platform_device *pdev)
 
 	ret = bcl_get_devicetree_data(pdev);
 	if (ret) {
-		pr_debug("Device tree data fetch error. err:%d", ret);
+		pr_err("Device tree data fetch error. err:%d", ret);
 		goto bcl_probe_exit;
 	}
 	if (bcl_perph_version == BCL_PMI8994) {
@@ -1232,7 +1228,7 @@ static int bcl_probe(struct platform_device *pdev)
 		bcl_psy = devm_power_supply_register(&pdev->dev, &bcl_psy_d,
 				&bcl_psy_cfg);
 		if (IS_ERR(bcl_psy)) {
-			pr_debug("Unable to register bcl_psy rc = %ld\n",
+			pr_err("Unable to register bcl_psy rc = %ld\n",
 			PTR_ERR(bcl_psy));
 			return ret;
 		}
@@ -1247,7 +1243,7 @@ static int bcl_probe(struct platform_device *pdev)
 
 	ret = bcl_update_data();
 	if (ret) {
-		pr_debug("Update data failed. err:%d", ret);
+		pr_err("Update data failed. err:%d", ret);
 		goto bcl_probe_exit;
 	}
 	mutex_lock(&bcl_perph->param[BCL_PARAM_VOLTAGE].state_trans_lock);
@@ -1289,7 +1285,7 @@ static int bcl_probe(struct platform_device *pdev)
 	dev_set_drvdata(&pdev->dev, bcl_perph);
 	ret = bcl_write_register(BCL_MONITOR_EN, BIT(7));
 	if (ret) {
-		pr_debug("Error accessing BCL peripheral. err:%d\n", ret);
+		pr_err("Error accessing BCL peripheral. err:%d\n", ret);
 		goto bcl_probe_exit;
 	}
 
@@ -1306,7 +1302,7 @@ static int bcl_remove(struct platform_device *pdev)
 
 	ret = bcl_monitor_disable();
 	if (ret)
-		pr_debug("Error disabling BCL. err:%d\n", ret);
+		pr_err("Error disabling BCL. err:%d\n", ret);
 
 	for (; i < BCL_PARAM_MAX; i++) {
 		if (!bcl_perph->param[i].param_data)
@@ -1314,7 +1310,7 @@ static int bcl_remove(struct platform_device *pdev)
 
 		ret = msm_bcl_unregister_param(bcl_perph->param[i].param_data);
 		if (ret)
-			pr_debug("Error unregistering with Framework. err:%d\n",
+			pr_err("Error unregistering with Framework. err:%d\n",
 					ret);
 	}
 
@@ -1351,7 +1347,7 @@ static int __init bcl_perph_init(void)
 		const struct of_device_id *match = of_match_node(bcl_match,
 							comp_node);
 		if (!match) {
-			pr_debug("Couldnt find a match\n");
+			pr_err("Couldnt find a match\n");
 			goto plt_register;
 		}
 		bcl_perph_version = (enum bcl_hw_type)match->data;

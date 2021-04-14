@@ -1209,7 +1209,7 @@ static inline int bq27xxx_battery_i2c_init(void)
 	int ret = i2c_add_driver(&bq27xxx_battery_i2c_driver);
 
 	if (ret)
-		pr_debug("Unable to register BQ27xxx i2c driver\n");
+		pr_err("Unable to register BQ27xxx i2c driver\n");
 
 	return ret;
 }
@@ -1322,7 +1322,7 @@ static inline int bq27xxx_battery_platform_init(void)
 	int ret = platform_driver_register(&bq27xxx_battery_platform_driver);
 
 	if (ret)
-		pr_debug("Unable to register BQ27xxx platform driver\n");
+		pr_err("Unable to register BQ27xxx platform driver\n");
 
 	return ret;
 }

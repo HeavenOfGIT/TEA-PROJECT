@@ -23,10 +23,6 @@
 #include "fg-core.h"
 #include "fg-reg.h"
 
-#ifdef CONFIG_MACH_ASUS_X00T
-#include <linux/switch.h>
-#endif
-
 #define FG_GEN3_DEV_NAME	"qcom,fg-gen3"
 
 #define PERPH_SUBTYPE_REG		0x05
@@ -411,13 +407,6 @@ module_param_named(
 
 static int fg_restart;
 static bool fg_sram_dump;
-
-#ifdef CONFIG_MACH_ASUS_X00T
-struct battery_name {
-	struct switch_dev battery_switch_dev;
-	char battery_name_type[100];
-} battery_name;
-#endif
 
 /* All getters HERE */
 
@@ -954,26 +943,6 @@ static int fg_batt_missing_config(struct fg_chip *chip, bool enable)
 	return rc;
 }
 
-#ifdef CONFIG_MACH_ASUS_X00T
-ssize_t battery_print_name(struct switch_dev *sdev,char *buf)
-{
-	return sprintf(buf,"%s\n",battery_name.battery_name_type);
-}
-static int battery_switch_register(void)
-{
-	int ret;
-	battery_name.battery_switch_dev.name="battery";
-	battery_name.battery_switch_dev.print_name=battery_print_name;
-	ret = switch_dev_register(&battery_name.battery_switch_dev);
-	if(ret<0)
-		return ret;
-	battery_name.battery_switch_dev.state=0;
-	switch_set_state(&battery_name.battery_switch_dev,
-		battery_name.battery_switch_dev.state);
-	return 0;
-}
-#endif
-
 static int fg_get_batt_id(struct fg_chip *chip)
 {
 	int rc, ret, batt_id = 0;
@@ -1038,11 +1007,6 @@ static int fg_get_batt_profile(struct fg_chip *chip)
 		pr_err("battery type unavailable, rc:%d\n", rc);
 		return rc;
 	}
-
-#ifdef CONFIG_MACH_ASUS_X00T
-	strcpy(battery_name.battery_name_type,chip->bp.batt_type_str);
-	battery_switch_register();
-#endif
 
 	rc = of_property_read_u32(profile_node, "qcom,max-voltage-uv",
 			&chip->bp.float_volt_uv);
@@ -1248,7 +1212,7 @@ static int fg_awake_cb(struct votable *votable, void *data, int awake,
 	struct fg_chip *chip = data;
 
 	if (awake)
-		pm_wakeup_event(chip->dev, 500);
+		pm_stay_awake(chip->dev);
 	else
 		pm_relax(chip->dev);
 
@@ -2605,8 +2569,7 @@ static void fg_ttf_update(struct fg_chip *chip)
 	chip->ttf.last_ttf = 0;
 	chip->ttf.last_ms = 0;
 	mutex_unlock(&chip->ttf.lock);
-	queue_delayed_work(system_power_efficient_wq,
-		&chip->ttf_work, msecs_to_jiffies(delay_ms));
+	schedule_delayed_work(&chip->ttf_work, msecs_to_jiffies(delay_ms));
 }
 
 static void restore_cycle_counter(struct fg_chip *chip)
@@ -3149,8 +3112,7 @@ static void sram_dump_work(struct work_struct *work)
 	fg_dbg(chip, FG_STATUS, "SRAM Dump done at %lld.%d\n",
 		quotient, remainder);
 resched:
-	queue_delayed_work(system_power_efficient_wq,
-		&chip->sram_dump_work,
+	schedule_delayed_work(&chip->sram_dump_work,
 			msecs_to_jiffies(fg_sram_dump_period_ms));
 }
 
@@ -3178,8 +3140,7 @@ static int fg_sram_dump_sysfs(const char *val, const struct kernel_param *kp)
 
 	chip = power_supply_get_drvdata(bms_psy);
 	if (fg_sram_dump)
-		queue_delayed_work(system_power_efficient_wq,
-			&chip->sram_dump_work,
+		schedule_delayed_work(&chip->sram_dump_work,
 				msecs_to_jiffies(fg_sram_dump_period_ms));
 	else
 		cancel_delayed_work_sync(&chip->sram_dump_work);
@@ -3308,13 +3269,8 @@ static int fg_get_time_to_full_locked(struct fg_chip *chip, int *val)
 	vbatt_avg /= MILLI_UNIT;
 
 	/* clamp ibatt_avg to iterm */
-	if ((msoc > 70) && (msoc <= 90)) {
-		if (ibatt_avg < 1000)
-			ibatt_avg = 1000; /* force consistent minumum charging current 1000mA upto 90% battery */
-	} else {
-		if (ibatt_avg < abs(chip->dt.sys_term_curr_ma))
-			ibatt_avg = abs(chip->dt.sys_term_curr_ma);
-	}
+	if (ibatt_avg < abs(chip->dt.sys_term_curr_ma))
+		ibatt_avg = abs(chip->dt.sys_term_curr_ma);
 
 	fg_dbg(chip, FG_TTF, "ibatt_avg=%d\n", ibatt_avg);
 	fg_dbg(chip, FG_TTF, "vbatt_avg=%d\n", vbatt_avg);
@@ -3747,8 +3703,8 @@ static void ttf_work(struct work_struct *work)
 		/* keep the wake lock and prime the IBATT and VBATT buffers */
 		if (ttf < 0) {
 			/* delay for one FG cycle */
-			queue_delayed_work(system_power_efficient_wq,
-				&chip->ttf_work, msecs_to_jiffies(1500));
+			schedule_delayed_work(&chip->ttf_work,
+							msecs_to_jiffies(1500));
 			mutex_unlock(&chip->ttf.lock);
 			return;
 		}
@@ -3764,8 +3720,7 @@ static void ttf_work(struct work_struct *work)
 	}
 
 	/* recurse every 10 seconds */
-	queue_delayed_work(system_power_efficient_wq,
-		&chip->ttf_work, msecs_to_jiffies(10000));
+	schedule_delayed_work(&chip->ttf_work, msecs_to_jiffies(10000));
 end_work:
 	vote(chip->awake_votable, TTF_PRIMING, false, 0);
 	mutex_unlock(&chip->ttf.lock);
@@ -4486,8 +4441,7 @@ static irqreturn_t fg_batt_missing_irq_handler(int irq, void *data)
 	}
 
 	clear_battery_profile(chip);
-	queue_delayed_work(system_power_efficient_wq,
-		&chip->profile_load_work, 0);
+	schedule_delayed_work(&chip->profile_load_work, 0);
 
 	if (chip->fg_psy)
 		power_supply_changed(chip->fg_psy);
@@ -5479,8 +5433,7 @@ static int fg_gen3_probe(struct platform_device *pdev)
 	}
 
 	device_init_wakeup(chip->dev, true);
-	queue_delayed_work(system_power_efficient_wq,
-		&chip->profile_load_work, 0);
+	schedule_delayed_work(&chip->profile_load_work, 0);
 
 	pr_debug("FG GEN3 driver probed successfully\n");
 	return 0;
@@ -5517,11 +5470,9 @@ static int fg_gen3_resume(struct device *dev)
 	if (rc < 0)
 		pr_err("Error in configuring ESR timer, rc=%d\n", rc);
 
-	queue_delayed_work(system_power_efficient_wq,
-		&chip->ttf_work, 0);
+	schedule_delayed_work(&chip->ttf_work, 0);
 	if (fg_sram_dump)
-		queue_delayed_work(system_power_efficient_wq,
-			&chip->sram_dump_work,
+		schedule_delayed_work(&chip->sram_dump_work,
 				msecs_to_jiffies(fg_sram_dump_period_ms));
 
 	if (!work_pending(&chip->status_change_work)) {
@@ -5553,18 +5504,6 @@ static void fg_gen3_shutdown(struct platform_device *pdev)
 {
 	struct fg_chip *chip = dev_get_drvdata(&pdev->dev);
 	int rc, bsoc;
-#ifdef CONFIG_MACH_ASUS_X00T
-	u8 status;
-	rc = fg_read(chip, BATT_INFO_BATT_MISS_CFG(chip), &status, 1);
-	printk("fg_gen3_shutdown status0=%d\n",status);
-	rc = fg_masked_write(chip, BATT_INFO_BATT_MISS_CFG(chip),
-			BM_FROM_BATT_ID_BIT, 0);
-	if (rc < 0)
-		pr_err("Error in writing to %04x, rc=%d\n",
-			BATT_INFO_BATT_MISS_CFG(chip), rc);
-	rc = fg_read(chip, BATT_INFO_BATT_MISS_CFG(chip), &status, 1);
-	printk("fg_gen3_shutdown status1=%d\n",status);
-#endif
 
 	if (chip->charge_full) {
 		rc = fg_get_sram_prop(chip, FG_SRAM_BATT_SOC, &bsoc);
