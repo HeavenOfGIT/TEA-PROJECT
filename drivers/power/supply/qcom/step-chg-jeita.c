@@ -89,8 +89,8 @@ static struct step_chg_cfg step_chg_config = {
 	.fcc_cfg	= {
 		/* VBAT_LOW	VBAT_HIGH	FCC */
 		{3600000,	4000000,	90000000},
-		{4001000,	4200000,	90000000,
-		{4201000,	4400000,	90000000,
+		{4001000,	4200000,	90000000},
+		{4201000,	4400000,	90000000},
 	},
 	/*
 	 *	SOC STEP-CHG configuration example.
