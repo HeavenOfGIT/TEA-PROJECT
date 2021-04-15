@@ -440,8 +440,7 @@ static void bcl_iavail_work(struct work_struct *work)
 	if (gbcl->bcl_mode == BCL_DEVICE_ENABLED) {
 		bcl_calculate_iavail_trigger();
 		/* restart the delay work for caculating imax */
-		queue_delayed_work(system_power_efficient_wq,
-                        &bcl->bcl_iavail_work,
+		schedule_delayed_work(&bcl->bcl_iavail_work,
 			msecs_to_jiffies(bcl->bcl_poll_interval_msec));
 	}
 }
@@ -813,8 +812,7 @@ static void bcl_mode_set(enum bcl_device_mode mode)
 	switch (gbcl->bcl_monitor_type) {
 	case BCL_IAVAIL_MONITOR_TYPE:
 		if (mode == BCL_DEVICE_ENABLED)
-			queue_delayed_work(system_power_efficient_wq,
-                                &gbcl->bcl_iavail_work, 0);
+			schedule_delayed_work(&gbcl->bcl_iavail_work, 0);
 		else
 			cancel_delayed_work_sync(&(gbcl->bcl_iavail_work));
 		break;
@@ -879,7 +877,7 @@ mode_show(struct device *dev, struct device_attribute *attr, char *buf)
 			: "disabled");
 }
 
-/* static ssize_t
+static ssize_t
 mode_store(struct device *dev, struct device_attribute *attr,
 		const char *buf, size_t count)
 {
@@ -897,7 +895,7 @@ mode_store(struct device *dev, struct device_attribute *attr,
 	}
 
 	return count;
-} */
+}
 
 static ssize_t
 poll_interval_store(struct device *dev,
@@ -1248,7 +1246,7 @@ static struct device_attribute bcl_dev_attr[] = {
 	__ATTR(vbat_min, 0644, vbat_min_show, vbat_min_store),
 	__ATTR(vbat, 0444, vbat_show, NULL),
 	__ATTR(rbat, 0444, rbat_show, NULL),
-	__ATTR(mode, 0644, mode_show, NULL),
+	__ATTR(mode, 0644, mode_show, mode_store),
 	__ATTR(poll_interval, 0644,
 		poll_interval_show, poll_interval_store),
 	__ATTR(iavail_low_threshold_mode, 0644,
@@ -1267,7 +1265,7 @@ static struct device_attribute bcl_dev_attr[] = {
 
 static struct device_attribute btm_dev_attr[] = {
 	__ATTR(type, 0444, type_show, NULL),
-	__ATTR(mode, 0644, mode_show, NULL),
+	__ATTR(mode, 0644, mode_show, mode_store),
 	__ATTR(vph_state, 0444, vph_state_show, NULL),
 	__ATTR(ibat_state, 0444, ibat_state_show, NULL),
 	__ATTR(high_threshold_ua, 0644, high_ua_show, high_ua_store),
@@ -1745,7 +1743,7 @@ static int bcl_probe(struct platform_device *pdev)
 	}
 	INIT_WORK(&bcl->soc_mitig_work, soc_mitigate);
 	bcl->psy_nb.notifier_call = power_supply_callback;
-	bcl->bcl_hotplug_wq = alloc_workqueue("bcl_hotplug_wq", WQ_UNBOUND, 0);
+	bcl->bcl_hotplug_wq = alloc_workqueue("bcl_hotplug_wq",  WQ_HIGHPRI, 0);
 	if (!bcl->bcl_hotplug_wq) {
 		pr_err("Workqueue alloc failed\n");
 		return -ENOMEM;
@@ -1778,9 +1776,8 @@ static int bcl_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, bcl);
 	INIT_DEFERRABLE_WORK(&bcl->bcl_iavail_work, bcl_iavail_work);
 	INIT_WORK(&bcl_hotplug_work, bcl_handle_hotplug);
-//	if (bcl_mode == BCL_DEVICE_ENABLED)
-//		bcl_mode_set(bcl_mode);
-	bcl_mode_set(BCL_DEVICE_DISABLED);
+	if (bcl_mode == BCL_DEVICE_ENABLED)
+		bcl_mode_set(bcl_mode);
 
 	return 0;
 }
