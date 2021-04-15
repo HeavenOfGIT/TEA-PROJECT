@@ -2658,10 +2658,10 @@ int smblib_get_prop_die_health(struct smb_charger *chg,
 #else
 #define DCP_CURRENT_UA			1500000
 #endif
-#define HVDCP_CURRENT_UA		3000000
+#define HVDCP_CURRENT_UA		9000000
 #define TYPEC_DEFAULT_CURRENT_UA	900000
 #define TYPEC_MEDIUM_CURRENT_UA		1500000
-#define TYPEC_HIGH_CURRENT_UA		3000000
+#define TYPEC_HIGH_CURRENT_UA		9000000
 static int get_rp_based_dcp_current(struct smb_charger *chg, int typec_mode)
 {
 	int rp_ua;
@@ -4087,7 +4087,7 @@ void asus_insertion_initial_settings(struct smb_charger *chg)
 			rc);
 
 	/* reg=1061, 0x38, 1475mA, gaiwei, 0x28, 1000mA */
-	rc = smblib_write(chg, FAST_CHARGE_CURRENT_CFG_REG, 0x28);
+	rc = smblib_write(chg, FAST_CHARGE_CURRENT_CFG_REG, 0x78);
 	if (rc < 0)
 		dev_err(chg->dev,
 			"Couldn't set default FAST_CHARGE_CURRENT_CFG_REG rc=%d\n",
@@ -4760,7 +4760,7 @@ static void smblib_force_legacy_icl(struct smb_charger *chg, int pst)
 		break;
 	case POWER_SUPPLY_TYPE_USB_HVDCP:
 	case POWER_SUPPLY_TYPE_USB_HVDCP_3:
-		vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, 3000000);
+		vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, 9000000);
 		break;
 	default:
 		smblib_err(chg, "Unknown APSD %d; forcing 500mA\n", pst);
