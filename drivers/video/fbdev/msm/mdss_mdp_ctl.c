@@ -2758,8 +2758,6 @@ int mdss_mdp_block_mixer_destroy(struct mdss_mdp_mixer *mixer)
 
 	mdss_mdp_ctl_free(ctl);
 
-	mdss_mdp_ctl_perf_update(ctl, 0, true);
-
 	return 0;
 }
 
